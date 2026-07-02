@@ -1,1 +1,6 @@
 /WEB/backend/venv/
+/WEB/backend/.env
+
+desktop.ini
+[Dd]esktop.ini
+Thumbs.db
