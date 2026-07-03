@@ -42,15 +42,14 @@ async def get_all_stations():
 @router_stations.get("/{station_id}")
 async def get_one_station(station_id : int):
     try:
-        data_res = []
         connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
         connection.autocommit = True
         with connection.cursor() as cursor:
-            cursor.execute('select * from station where id=%s', (str(station_id)))
+            cursor.execute('select * from station where id=%s', (str(station_id), ))
             data_one_station = cursor.fetchone()
-        connection.close()
-        print('info: коннект закрыт')
-        data_res.append({"id": data_one_station[0], "region": data_one_station[1], "adress": data_one_station[2], "rating" : data_one_station[3]})
+            if data_one_station is None:
+                return {"status": "error", "message": "Станция не найдена"}
+        data_res = {"id": data_one_station[0], "region": data_one_station[1], "adress": data_one_station[2], "rating" : data_one_station[3]}
         return data_res
     except Exception as e:
         print(f'info: ошибка {e}')
@@ -77,6 +76,7 @@ async def add_new_station(data_about_new_station : StationCreate):
         if connection:
             connection.close()
             print('info: коннект закрыт')
+
 @router_stations.put("/{id}")
 async def update_data_about_station(id : int = 0, region : str | None = None, adress : str | None = None):
     try:
