@@ -12,7 +12,7 @@ reader = easyocr.Reader(['ru', 'en'], gpu=False)
 # Файл haarcascade_russian_plate_number.xml должен лежать в той же папке, что и этот скрипт!
 num_cas = cv2.CascadeClassifier(r'C:\Users\Sergey\Documents\future-AZS\WEB\backend\analiz_num\haarcascade_russian_plate_number.xml')
 
-image_path = r'C:\Users\Sergey\Downloads\b1e7a6277e143fd5cbb580a80307507f.jpg'
+image_path = r'path'
 image = cv2.imread(image_path)
 
 if image is None:
