@@ -10,7 +10,7 @@ reader = easyocr.Reader(['ru', 'en'], gpu=False)
 
 # 2. Загружаем каскад Хаара для поиска автомобильного номера.
 # Файл haarcascade_russian_plate_number.xml должен лежать в той же папке, что и этот скрипт!
-num_cas = cv2.CascadeClassifier(r'C:\Users\Sergey\Documents\future-AZS\WEB\backend\analiz_num\haarcascade_russian_plate_number.xml')
+num_cas = cv2.CascadeClassifier(r'path')
 
 image_path = r'path'
 image = cv2.imread(image_path)
