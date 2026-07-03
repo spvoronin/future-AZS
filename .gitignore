@@ -1,1 +1,6 @@
 /WEB/backend/venv/
+
+# Служебные файлы Windows
+desktop.ini
+[Dd]esktop.ini
+Thumbs.db
