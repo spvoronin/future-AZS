@@ -1,6 +1,6 @@
 /WEB/backend/venv/
 /WEB/backend/.env
-
+.idea/
 desktop.ini
 [Dd]esktop.ini
 Thumbs.db
