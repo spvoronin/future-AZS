@@ -2,7 +2,7 @@ from fastapi import APIRouter
 import psycopg2
 import os
 from dotenv import load_dotenv
-from schemas.schem import UserCreate
+from schemas.schem import UserCreate, UserLogin
 
 load_dotenv()
 
@@ -72,8 +72,6 @@ async def add_new_user(data_about_new_user: UserCreate):
                  data_about_new_user.first_name, data_about_new_user.number_of_car))
             cursor.execute('select id from users order by id desc')
             new_id = cursor.fetchone()[0]
-        connection.close()
-        print('info: коннект закрыт')
         return {"status": "ok", "code": 201, "new_id": new_id, "phone": data_about_new_user.phone,
                 "email": data_about_new_user.email, "first_name": data_about_new_user.first_name,
                 "number_of_car": data_about_new_user.number_of_car}
@@ -84,8 +82,10 @@ async def add_new_user(data_about_new_user: UserCreate):
             connection.close()
             print('info: коннект закрыт')
 
+
 @router_users.put("/{id}")
-async def update_data_about_user(id : int = 0, phone : str | None = None, email : str | None = None, first_name : str | None = None, number_of_car : str | None = None):
+async def update_data_about_user(id: int = 0, phone: str | None = None, email: str | None = None,
+                                 first_name: str | None = None, number_of_car: str | None = None):
     try:
         connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
         connection.autocommit = True
@@ -98,7 +98,30 @@ async def update_data_about_user(id : int = 0, phone : str | None = None, email 
                 cursor.execute("update users set first_name=%s where id=%s", (first_name, str(id)))
             if number_of_car:
                 cursor.execute("update users set number_of_car=%s where id=%s", (number_of_car, str(id)))
-        return {"status": "ok", "code" : 204}
+        return {"status": "ok", "code": 204}
+    except Exception as e:
+        print(f'info: ошибка {e}')
+    finally:
+        if connection:
+            connection.close()
+            print('info: коннект закрыт')
+
+
+@router_users.post("/login")
+async def login_user(data_for_login: UserLogin):
+    try:
+        connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
+        connection.autocommit = True
+        with connection.cursor() as cursor:
+            cursor.execute('select phone, first_name, number_of_car from users where email = %s and password_hash = %s',
+                           (data_for_login.email, data_for_login.password_hash))
+            ans = cursor.fetchone()
+            data_about_user = ans if ans else None
+        if (data_about_user):
+            return {'phone': data_about_user[0], 'first_name': data_about_user[1], 'number_of_car' : data_about_user[
+                2], 'email' : data_for_login.email}
+        else:
+            return {'message' : 'Unauthorized', 'code' : 401}
     except Exception as e:
         print(f'info: ошибка {e}')
     finally:
