@@ -14,4 +14,10 @@ class UserCreate(UserLogin):
     first_name: str = Field(title="Имя")
     number_of_car: str = Field(title="Номер машины")
 
+class PumpCreate(BaseModel):
+    station_id : int = Field(title="Айди АЗС, на которой стоит ТРК")
+    pump_number : int = Field(title="Номер ТРК на АЗС")
+    status : str = Field(Field="Статус")
+    is_active : bool = Field(title="Доступность")
+
 

@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from routers.pumps import router_pumps
 from routers.stations import router_stations
 from routers.users import router_users
 from fastapi.middleware.cors import CORSMiddleware

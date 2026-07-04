@@ -83,24 +83,25 @@ async def add_new_user(data_about_new_user: UserCreate):
             print('info: коннект закрыт')
 
 
-@router_users.put("/{id}")
-async def update_data_about_user(id: int = 0, phone: str | None = None, email: str | None = None,
+@router_users.put("/{user_is}")
+async def update_data_about_user(user_is: int = 0, phone: str | None = None, email: str | None = None,
                                  first_name: str | None = None, number_of_car: str | None = None):
     try:
         connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
         connection.autocommit = True
         with connection.cursor() as cursor:
             if phone:
-                cursor.execute("update users set phone=%s where id=%s", (phone, str(id)))
+                cursor.execute("update users set phone=%s where id=%s", (phone, str(user_is)))
             if email:
-                cursor.execute("update users set email=%s where id=%s", (email, str(id)))
+                cursor.execute("update users set email=%s where id=%s", (email, str(user_is)))
             if first_name:
-                cursor.execute("update users set first_name=%s where id=%s", (first_name, str(id)))
+                cursor.execute("update users set first_name=%s where id=%s", (first_name, str(user_is)))
             if number_of_car:
-                cursor.execute("update users set number_of_car=%s where id=%s", (number_of_car, str(id)))
+                cursor.execute("update users set number_of_car=%s where id=%s", (number_of_car, str(user_is)))
         return {"status": "ok", "code": 204}
     except Exception as e:
         print(f'info: ошибка {e}')
+        return {"status": "error", "message": "Не удалось обновить данные пользователя"}
     finally:
         if connection:
             connection.close()
