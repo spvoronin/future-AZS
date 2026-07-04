@@ -16,3 +16,4 @@ app.add_middleware(
 
 app.include_router(router_stations)
 app.include_router(router_users)
+app.include_router(router_pumps)
