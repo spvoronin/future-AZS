@@ -20,4 +20,8 @@ class PumpCreate(BaseModel):
     status : str = Field(Field="Статус")
     is_active : bool = Field(title="Доступность")
 
+class PricesCreate(BaseModel):
+    region_name : str = Field(title="Название региона")
+    fuel_type : str = Field(title="Вид топлива")
+    price_per_liter : float = Field(title="Цена за литр топлива")
 

@@ -9,7 +9,7 @@ create table station
 id serial primary key, -- уникальный id АЗС
 adress text not null, -- адрес АЗС
 rating int not null, -- рейтинг АЗС
-region_id int, -- айди 
+region_id int, -- айди
 CONSTRAINT fk_region_id FOREIGN KEY(region_id) REFERENCES region(id) on delete cascade
 );
 
@@ -53,12 +53,12 @@ constraint fk_station_id_TA foreign key (station_id) references station(id) on d
 
 create table prices
 (
-station_id int not null, -- айди станции
+region_id int not null, -- айди региона
 fuel_type varchar(20) not null, -- тип топлива
 price_per_liter real not null, -- цена
 time timestamp default current_timestamp, -- время пинга
 primary key (station_id, fuel_type),
-constraint fk_station_id_PR foreign key (station_id) references station(id) on delete cascade
+CONSTRAINT fk_region_PR FOREIGN KEY(region_id) REFERENCES region(id) on delete cascade
 );
 
 create table transactions
