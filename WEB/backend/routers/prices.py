@@ -59,8 +59,8 @@ async def add_new_price(data_about_new_fuel: PricesCreate):
             if not region_id:
                 return {"status": "error", "message": "В этом регионе нет АЗС"}
             cursor.execute(
-                'insert into prices(fuel_type, price_per_liter, region_id) values (%s, %s, %s) ON CONFLICT (region_id, fuel_type) DO UPDATE SET price_per_liter = EXCLUDED.price_per_liter',
-                (data_about_new_fuel.fuel_type, str(data_about_new_fuel.price_per_liter), str(region_id[0])))
+                'insert into prices(region_id, fuel_type, price_per_liter) values (%s, %s, %s) ON CONFLICT (region_id, fuel_type) DO UPDATE SET price_per_liter = EXCLUDED.price_per_liter',
+                (region_id[0], data_about_new_fuel.fuel_type, data_about_new_fuel.price_per_liter))
             return {"status": "ok", "code": 201, "fuel_type": data_about_new_fuel.fuel_type,
                     "price_per_liter": data_about_new_fuel.price_per_liter,
                     "region_id": region_id[0]}

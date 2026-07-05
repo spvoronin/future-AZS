@@ -43,10 +43,9 @@ tank_number int not null, -- номер резервуара
 compartment_number int not null, -- номер раздела в резервуаре
 fuel_type varchar(20) not null, -- вид топлива
 max_capacity real not null, -- объём раздела резервуара
-current_liters smallint not null, -- настоящий объём в процентах
+current_liters int not null, -- настоящий объём в процентах
 temperature real not null, -- температура раздела
 time timestamp default current_timestamp, -- время пинга
-CONSTRAINT check_percent CHECK (current_liters >= 0 AND current_liters <= 100), -- в процентах
 CONSTRAINT unique_compartment UNIQUE (station_id, tank_number, compartment_number), -- уникальный набор id станции, номера резервуара, номера раздела
 constraint fk_station_id_TA foreign key (station_id) references station(id) on delete cascade
 );
@@ -57,7 +56,7 @@ region_id int not null, -- айди региона
 fuel_type varchar(20) not null, -- тип топлива
 price_per_liter real not null, -- цена
 time timestamp default current_timestamp, -- время пинга
-primary key (station_id, fuel_type),
+primary key (region_id, fuel_type),
 CONSTRAINT fk_region_PR FOREIGN KEY(region_id) REFERENCES region(id) on delete cascade
 );
 

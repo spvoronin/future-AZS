@@ -34,3 +34,9 @@ class TankCreate(BaseModel):
     current_liters: float = Field(..., ge=0)
     temperature: float = Field(20.0, description="Текущая температура топлива")
 
+class TransactionCreate(BaseModel):
+    user_id: int
+    pump_id: int
+    fuel_type: str
+    requested_liters: float = Field(..., gt=0, description="Количество заказываемых литров")
+
