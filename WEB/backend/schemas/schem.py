@@ -25,3 +25,12 @@ class PricesCreate(BaseModel):
     fuel_type : str = Field(title="Вид топлива")
     price_per_liter : float = Field(title="Цена за литр топлива")
 
+class TankCreate(BaseModel):
+    station_id: int
+    tank_number: int
+    compartment_number: int
+    fuel_type: str
+    max_capacity: float = Field(..., gt=0)
+    current_liters: float = Field(..., ge=0)
+    temperature: float = Field(20.0, description="Текущая температура топлива")
+
