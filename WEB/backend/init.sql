@@ -1,7 +1,16 @@
+create table region
+(
+id serial primary key, -- уникальный айди региона
+region_name text -- название региона
+);
+
 create table station
 (
 id serial primary key, -- уникальный id АЗС
-region text not null
+adress text not null, -- адрес АЗС
+rating int not null, -- рейтинг АЗС
+region_id int, -- айди 
+CONSTRAINT fk_region_id FOREIGN KEY(region_id) REFERENCES region(id) on delete cascade
 );
 
 create table users
@@ -11,7 +20,8 @@ phone varchar(20) not null unique, -- Номер телефона
 email varchar(100) unique, -- Почта для чеков и уведомлений
 password_hash varchar(255) not null, -- Хэш пароля
 first_name varchar(50), -- Имя клиента created_at
-time timestamp default current_timestamp -- время пинга
+time timestamp default current_timestamp, -- время пинга
+number_of_car varchar(20) not null
 );
 
 create table pumps
@@ -75,13 +85,3 @@ status varchar(20) default 'active', -- active, blocked
 time timestamp default current_timestamp, -- время пинга
 constraint fk_user_id_LC foreign key (user_id) references users(id) on delete cascade
 );
-
-
-alter table users
-add column number_of_car varchar(20) not null;
-
-alter table station
-add column adress text not null;
-
-alter table station
-add column rating int

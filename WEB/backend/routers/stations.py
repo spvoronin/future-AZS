@@ -25,7 +25,8 @@ async def get_all_stations():
         connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
         connection.autocommit = True
         with connection.cursor() as cursor:
-            cursor.execute('select * from station order by id desc')
+            cursor.execute(
+                'select station.id, region.region_name, adress, rating from station JOIN region ON station.region_id = region.id')
             data_all_stations = cursor.fetchall()
         for records in data_all_stations:
             data_res.append({"id": records[0], "region": records[1], "adress": records[2], "rating": records[3]})
@@ -45,7 +46,9 @@ async def get_one_station(station_id: int):
         connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
         connection.autocommit = True
         with connection.cursor() as cursor:
-            cursor.execute('select * from station where id=%s', (str(station_id),))
+            cursor.execute(
+                'select station.id, region.region_name, adress, rating from station JOIN region ON station.region_id = region.id where station.id=%s',
+                (str(station_id),))
             data_one_station = cursor.fetchone()
             if data_one_station is None:
                 return {"status": "error", "message": "Станция не найдена"}
@@ -67,10 +70,19 @@ async def add_new_station(data_about_new_station: StationCreate):
         connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
         connection.autocommit = True
         with connection.cursor() as cursor:
-            cursor.execute('insert into station(region, adress, rating) values (%s, %s, %s) RETURNING id', (
-            data_about_new_station.region, data_about_new_station.adress, str(data_about_new_station.rating)))
+            cursor.execute('select id from region where region_name=%s', (data_about_new_station.region,))
+            res = cursor.fetchone()
+            if res:
+                region_id = res[0]
+            else:
+                cursor.execute('insert into region(region_name) values (%s) RETURNING id',
+                               (data_about_new_station.region,))
+                region_id = cursor.fetchone()[0]
+
+            cursor.execute('insert into station(adress, rating, region_id) values (%s, %s, %s) RETURNING id', (
+                data_about_new_station.adress, data_about_new_station.rating, str(region_id)))
             new_id = cursor.fetchone()[0]
-        return {"status": "ok", "code": 201, "new_id": new_id, "region": data_about_new_station.region,
+        return {"status": "ok", "code": 201, "new_id": new_id, "region_id": region_id,
                 "address": data_about_new_station.adress, "rating": data_about_new_station.rating}
     except Exception as e:
         print(f'info: ошибка {e}')
@@ -88,10 +100,18 @@ async def update_data_about_station(station_id: int = 0, region: str | None = No
         connection.autocommit = True
         with connection.cursor() as cursor:
             if region:
-                cursor.execute("update station set region=%s where id=%s", (region, str(station_id)))
+                cursor.execute('select id from region where region_name=%s', (region,))
+                res = cursor.fetchone()
+                if res:
+                    region_id = res[0]
+                else:
+                    cursor.execute('insert into region(region_name) values (%s) RETURNING id',
+                                   (region,))
+                    region_id = cursor.fetchone()[0]
+                cursor.execute("update station set region_id=%s where id=%s", (region_id, str(station_id)))
             if adress:
                 cursor.execute("update station set adress=%s where id=%s", (adress, str(station_id)))
-        return {"status": "ok", "code": 204}
+        return {"status": "ok", "code": 200}
     except Exception as e:
         print(f'info: ошибка {e}')
         return {"status": "error", "message": "Не удалось обновить данные станции"}
