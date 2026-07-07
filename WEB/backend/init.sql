@@ -88,9 +88,10 @@ constraint fk_user_id_LC foreign key (user_id) references users(id) on delete ca
 create table sensors
 (
 id serial primary key, -- айди записи
+uuid text not null, -- уникальный айди устройства
 station_id int, -- айди АЗС
 electric_current real not null, -- значение тока с AS712
-flame int not null, -- датчик пламени
+flame boolean not null, -- датчик пламени
 gas int not null, -- показания с MQ-2
 ambient_humidity real not null, -- влажность среды с DHT11
 ambient_temperature real not null, -- температура среды с DHT11
