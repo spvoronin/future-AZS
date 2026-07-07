@@ -19,7 +19,7 @@ id serial primary key,
 phone varchar(20) not null unique, -- Номер телефона
 email varchar(100) unique, -- Почта для чеков и уведомлений
 password_hash varchar(255) not null, -- Хэш пароля
-first_name varchar(50), -- Имя клиента created_at
+first_name varchar(50), -- Имя клиента
 time timestamp default current_timestamp, -- время пинга
 number_of_car varchar(20) not null
 );
@@ -85,11 +85,18 @@ time timestamp default current_timestamp, -- время пинга
 constraint fk_user_id_LC foreign key (user_id) references users(id) on delete cascade
 );
 
+create table uuid
+(
+id serial primary key, -- номер(айди устройства)
+uuid text not null unique, -- уникальный код устрйоства
+station_id int not null, -- номер станции устрйоства
+constraint fk_station_id_UU foreign key (station_id) references station(id) on delete cascade
+);
+
 create table sensors
 (
 id serial primary key, -- айди записи
 uuid text not null, -- уникальный айди устройства
-station_id int, -- айди АЗС
 electric_current real not null, -- значение тока с AS712
 flame boolean not null, -- датчик пламени
 gas int not null, -- показания с MQ-2
@@ -98,5 +105,5 @@ ambient_temperature real not null, -- температура среды с DHT11
 tank_temperature real not null, -- температура в цистерне
 water_level int not null, -- уровень воды
 time timestamp default current_timestamp, -- время пинга
-constraint fk_station_id_SE foreign key (station_id) references station(id) on delete cascade
-)
+constraint fk_uuid foreign key (uuid) references uuid(uuid) on delete cascade
+);
