@@ -6,3 +6,5 @@ desktop.ini
 Thumbs.db
 
 /.idea/
+
+Arduino\main\secrets.h

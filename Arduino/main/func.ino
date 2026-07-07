@@ -63,3 +63,33 @@ void updateDynamicData() {
   bool gaz_tft = map(currentData.gaz, 0, 4095, 0, 1);
   tft.print(gaz_tft);
 }
+
+void sendTelemetryMQTT() {
+  // Выделяем память под JSON-документ (300 байт с запасом)
+  StaticJsonDocument<300> doc;
+
+  // Заполняем по твоему шаблону
+  doc["key"] = "info_about_sensor_SAF";
+  doc["uuid"] = SECRET_DEVICE_UUID;
+  doc["timestamp"] = 1783412921; // Пока статический, как в задании
+  doc["electric_current"] = currentData.current_mA;
+  doc["flame"] = currentData.flame;
+  doc["gas"] = currentData.gaz;
+  doc["ambient_humidity"] = currentData.airHumidity;
+  doc["ambient_temperature"] = currentData.airTemp;
+  doc["tank_temperature"] = currentData.fuelTemp;
+  doc["water_level"] = currentData.fuelLevel;
+
+  // Конвертируем JSON в текстовую строку
+  String jsonString;
+  serializeJson(doc, jsonString);
+
+  // Выводим в Serial для контроля
+  Serial.print("Отправка пакета: ");
+  Serial.println(jsonString);
+
+  // Если связь с брокером есть - публикуем в топик из secrets.h
+  if (client.connected()) {
+    client.publish(SECRET_TOPIC_PUB, jsonString.c_str());
+  }
+}
