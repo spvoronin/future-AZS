@@ -1,0 +1,65 @@
+void readSensors() {
+  //DHT11
+  float h = dht.readHumidity();
+  float t = dht.readTemperature();
+
+  if (!isnan(h) && !isnan(t)) {   //проверка на число
+    currentData.airHumidity = h;  // Записали влажность воздуха
+    currentData.airTemp = t;      // Записали температуру воздуха
+  }
+  
+  // temp fuel
+  currentData.fuelTemp = 20.5;  // Сюда пойдет код для термопары
+  int rawFuel = analogRead(FUEL_PIN);
+  currentData.fuelLevel = map(rawFuel, 0, 4095, 0, 100);
+  currentData.fuelLevel = constrain(currentData.fuelLevel, 0, 100);  //ограничитель
+
+  // 4. Чтение датчика тока ACS712
+  currentData.current_mA = acs.mA_DC();
+  // Программный шумодав: если показания прыгают в пределах ±10 мА холостого хода, принудительно пишем 0
+  if (abs(currentData.current_mA) < 10) {
+    currentData.current_mA = 0;
+  }
+}
+
+// Функция обновления живых данных на экране
+void updateDynamicData() {
+  tft.setTextColor(ST7735_BLACK, ST7735_WHITE);
+  tft.setTextSize(1);
+
+  // Вывод температуры воздуха (напротив "Air Temp:")
+  tft.setCursor(90, x_start);
+  tft.print(currentData.airTemp, 1);  // 1 знак после запятой
+  tft.print("C ");
+
+  // Вывод влажности воздуха (напротив "Air Hum:")
+  tft.setCursor(90, x_start + shift);
+  tft.print(currentData.airHumidity, 1);
+  tft.print("% ");
+
+  // Вывод температуры топлива с будущей термопары (напротив "Fuel Temp:")
+  tft.setCursor(90, x_start + (shift * 2));
+  tft.print(currentData.fuelTemp, 1);
+  tft.print("C ");
+
+  // Вывод уровня топлива (напротив "Fuel Level:")
+  tft.setCursor(90, x_start + (shift * 3));
+  tft.print(currentData.fuelLevel);
+  tft.print("% ");
+
+  // 5. Ток с ACS712 (переводим в мА: умножаем на 1000)
+  tft.setCursor(90, x_start + (shift * 4));
+  int current_mA = currentData.current_mA * 1000;
+  tft.print(current_mA);
+  tft.print("mA   ");
+
+  // 6. Пламя
+  tft.setCursor(90, x_start + (shift * 5));
+  bool flame_tft = map(currentData.flame, 0, 4095, 0, 1);
+  tft.print(flame_tft);
+
+  // 7. Газ
+  tft.setCursor(90, x_start + (shift * 6));
+  bool gaz_tft = map(currentData.gaz, 0, 4095, 0, 1);
+  tft.print(gaz_tft);
+}
