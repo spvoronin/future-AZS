@@ -27,7 +27,7 @@ const int shift = 14;        //регулируемый межстрочный �
 
 Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
 DHT dht(DHT_PIN, DHT11);
-ACS712 acs(CURRENT_PIN, 3.3, 4095, 33.77);
+ACS712 acs(CURRENT_PIN, 3.3, 4095, 185);
 
 struct SensorData {
   float airTemp = 0.0;      // Температура воздуха
@@ -54,7 +54,7 @@ void setup() {
 
   analogWrite(TFT_LED, brightness);
   tft.initR(INITR_BLACKTAB);
-  tft.setRotation(1);
+  tft.setRotation(2);
   tft.fillScreen(ST7735_WHITE);
 
   tft.drawRGBBitmap(0, 0, SAF, IMG_WIDTH, IMG_HEIGHT);

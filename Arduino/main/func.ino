@@ -17,7 +17,7 @@ void readSensors() {
   // 4. Чтение датчика тока ACS712
   currentData.current_mA = acs.mA_DC();
   // Программный шумодав: если показания прыгают в пределах ±10 мА холостого хода, принудительно пишем 0
-  if (abs(currentData.current_mA) < 10) {
+  if (abs(currentData.current_mA) < 70) {
     currentData.current_mA = 0;
   }
 }
@@ -30,28 +30,28 @@ void updateDynamicData() {
   // Вывод температуры воздуха (напротив "Air Temp:")
   tft.setCursor(90, x_start);
   tft.print(currentData.airTemp, 1);  // 1 знак после запятой
-  tft.print("C ");
+  tft.print("C  ");
 
   // Вывод влажности воздуха (напротив "Air Hum:")
   tft.setCursor(90, x_start + shift);
   tft.print(currentData.airHumidity, 1);
-  tft.print("% ");
+  tft.print("%   ");
 
   // Вывод температуры топлива с будущей термопары (напротив "Fuel Temp:")
   tft.setCursor(90, x_start + (shift * 2));
   tft.print(currentData.fuelTemp, 1);
-  tft.print("C ");
+  tft.print("C  ");
 
   // Вывод уровня топлива (напротив "Fuel Level:")
   tft.setCursor(90, x_start + (shift * 3));
   tft.print(currentData.fuelLevel);
-  tft.print("% ");
+  tft.print("%   ");
 
   // 5. Ток с ACS712 (переводим в мА: умножаем на 1000)
   tft.setCursor(90, x_start + (shift * 4));
-  int current_mA = currentData.current_mA * 1000;
-  tft.print(current_mA);
-  tft.print("mA   ");
+  tft.print(currentData.current_mA);
+  tft.print("mA  ");
+  Serial.println(currentData.current_mA);
 
   // 6. Пламя
   tft.setCursor(90, x_start + (shift * 5));
