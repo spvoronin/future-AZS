@@ -20,6 +20,7 @@ router_pumps = APIRouter(
 
 @router_pumps.get("/{id_pump}")
 async def get_one_pump(id_pump: int):
+    connection = None
     try:
         connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
         connection.autocommit = True
@@ -43,6 +44,7 @@ async def get_one_pump(id_pump: int):
 
 @router_pumps.post("")
 async def add_new_pump(data_about_new_pump: PumpCreate):
+    connection = None
     try:
         connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
         connection.autocommit = True
@@ -68,6 +70,7 @@ async def add_new_pump(data_about_new_pump: PumpCreate):
 @router_pumps.put("/{pump_id}")
 async def update_data_about_pump(pump_id: int = 0, station_id: int | None = None, pump_number: int | None = None,
                                  status: str | None = None, is_active: bool | None = None):
+    connection = None
     try:
         connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
         connection.autocommit = True
@@ -91,6 +94,7 @@ async def update_data_about_pump(pump_id: int = 0, station_id: int | None = None
 
 @router_pumps.delete("/{pump_id}")
 async def delete_pump(pump_id : int):
+    connection = None
     try:
         connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
         connection.autocommit = True

@@ -20,6 +20,7 @@ router_users = APIRouter(
 
 @router_users.get("")
 async def get_all_users():
+    connection = None
     try:
         data_res = []
         connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
@@ -42,6 +43,7 @@ async def get_all_users():
 
 @router_users.get("/{user_id}")
 async def get_one_user(user_id: int):
+    connection = None
     try:
         connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
         connection.autocommit = True
@@ -64,6 +66,7 @@ async def get_one_user(user_id: int):
 
 @router_users.post("/register")
 async def add_new_user(data_about_new_user: UserCreate):
+    connection = None
     try:
         connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
         connection.autocommit = True
@@ -88,6 +91,7 @@ async def add_new_user(data_about_new_user: UserCreate):
 @router_users.put("/{user_id}")
 async def update_data_about_user(user_id: int = 0, phone: str | None = None, email: str | None = None,
                                  first_name: str | None = None, number_of_car: str | None = None):
+    connection = None
     try:
         connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
         connection.autocommit = True
@@ -112,6 +116,7 @@ async def update_data_about_user(user_id: int = 0, phone: str | None = None, ema
 
 @router_users.post("/login")
 async def login_user(data_for_login: UserLogin):
+    connection = None
     try:
         connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
         connection.autocommit = True

@@ -20,6 +20,7 @@ router_stations = APIRouter(
 
 @router_stations.get("")
 async def get_all_stations():
+    connection = None
     try:
         data_res = []
         connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
@@ -42,6 +43,7 @@ async def get_all_stations():
 
 @router_stations.get("/{station_id}")
 async def get_one_station(station_id: int):
+    connection = None
     try:
         connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
         connection.autocommit = True
@@ -66,6 +68,7 @@ async def get_one_station(station_id: int):
 
 @router_stations.post("")
 async def add_new_station(data_about_new_station: StationCreate):
+    connection = None
     try:
         connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
         connection.autocommit = True
@@ -95,6 +98,7 @@ async def add_new_station(data_about_new_station: StationCreate):
 
 @router_stations.put("/{station_id}")
 async def update_data_about_station(station_id: int = 0, region: str | None = None, adress: str | None = None):
+    connection = None
     try:
         connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
         connection.autocommit = True
@@ -123,6 +127,7 @@ async def update_data_about_station(station_id: int = 0, region: str | None = No
 
 @router_stations.delete("/{station_id}")
 async def delete_station(station_id: int):
+    connection = None
     try:
         connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
         connection.autocommit = True
@@ -140,6 +145,7 @@ async def delete_station(station_id: int):
 
 @router_stations.get("/{station_id}/pumps")
 async def data_about_pumps_on_stations(station_id: int):
+    connection = None
     try:
         data_res = []
         connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)

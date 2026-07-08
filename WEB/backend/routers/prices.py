@@ -20,6 +20,7 @@ router_prices = APIRouter(
 
 @router_prices.get('/{station_id}')
 async def get_prices_of_region(station_id: int, fuel_type: str | None = None):
+    connection = None
     try:
         data_res = []
         connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
@@ -50,6 +51,7 @@ async def get_prices_of_region(station_id: int, fuel_type: str | None = None):
 
 @router_prices.post("")
 async def add_new_price(data_about_new_fuel: PricesCreate):
+    connection = None
     try:
         connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
         connection.autocommit = True
@@ -74,6 +76,7 @@ async def add_new_price(data_about_new_fuel: PricesCreate):
 
 @router_prices.delete("/{region_id}")
 async def delete_fuel_price(region_id: int, fuel_type: str):
+    connection = None
     try:
         connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
         connection.autocommit = True

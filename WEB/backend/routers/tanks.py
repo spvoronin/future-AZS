@@ -20,6 +20,7 @@ router_tanks = APIRouter(
 
 @router_tanks.get("/station/{station_id}")
 async def get_station_tanks(station_id: int):
+    connection = None
     try:
         data_res = []
         connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
@@ -60,6 +61,7 @@ async def get_station_tanks(station_id: int):
 
 @router_tanks.put("/{tank_id}/refill")
 async def refill_tank(tank_id: int, data: float):
+    connection = None
     try:
         connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
         connection.autocommit = True
@@ -102,6 +104,7 @@ async def create_tank(data: TankCreate):
             "status": "error",
             "message": f"Начальный объем ({data.current_liters}л) не может превышать макс. емкость ({data.max_capacity}л)"
         }
+    connection = None
     try:
         connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
         connection.autocommit = True
