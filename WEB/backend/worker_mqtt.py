@@ -45,8 +45,8 @@ def on_message(client, userdata, msg):
         connection.autocommit = True
         with connection.cursor() as cursor:
             cursor.execute(
-                "insert into sensors(uuid, station_id, electric_current, flame, gas, ambient_humidity, ambient_temperature, tank_temperature, water_level) values (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                (clear_data["uuid"], clear_data["station_id"], clear_data["electric_current"], clear_data['flame'],
+                "insert into sensors(uuid, electric_current, flame, gas, ambient_humidity, ambient_temperature, tank_temperature, water_level) values (%s, %s, %s, %s, %s, %s, %s, %s)",
+                (clear_data["uuid"], clear_data["electric_current"], clear_data['flame'],
                  clear_data["gas"], clear_data["ambient_humidity"], clear_data["ambient_temperature"],
                  clear_data["tank_temperature"], clear_data["water_level"]))
     except Exception as e:
