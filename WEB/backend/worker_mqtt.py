@@ -17,7 +17,7 @@ PASSWORD = os.getenv("PASSWORD")
 DATABASE = os.getenv("DATABASE")
 CONNECT = os.getenv("CONNECT")
 
-MQTT_topic = ""
+MQTT_topic = "BV/SAF/sensors"
 
 
 def on_message(client, userdata, msg):
