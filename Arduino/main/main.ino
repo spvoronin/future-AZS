@@ -42,7 +42,7 @@ const int shift = 14;        //регулируемый межстрочный �
 
 Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
 DHT dht(DHT_PIN, DHT11);
-ACS712 acs(CURRENT_PIN, 3.3, 4095, 300);
+ACS712 acs(CURRENT_PIN, 3.3, 4095, 367);
 
 WiFiClient espClient;
 PubSubClient client(espClient);
