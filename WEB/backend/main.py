@@ -5,6 +5,7 @@ from routers.users import router_users
 from routers.prices import router_prices
 from routers.tanks import router_tanks
 from routers.transactions import router_transactions
+from routers.sensors import router_sensor
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -23,3 +24,4 @@ app.include_router(router_pumps)
 app.include_router(router_prices)
 app.include_router(router_tanks)
 app.include_router(router_transactions)
+app.include_router(router_sensor)
