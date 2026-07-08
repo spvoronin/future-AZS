@@ -10,6 +10,7 @@
 
 #include "foto.h"
 #include "secrets.h"
+//#include "Cl_timestamp.h"  // для timestamp
 
 const char* ssid = SECRET_SSID;
 const char* password = SECRET_PASS;
@@ -45,6 +46,7 @@ ACS712 acs(CURRENT_PIN, 3.3, 4095, 300);
 
 WiFiClient espClient;
 PubSubClient client(espClient);
+//timeSt test_send_time;
 
 struct SensorData {
   float airTemp = 0.0;      // Температура воздуха
@@ -105,6 +107,9 @@ void loop() {
   
   if (millis() - lastUpdate >= INTERVAL) {
     lastUpdate = millis();
+
+    //test_send_time.timeStam();  // обновление
+    //String time = String(test_send_time.timeS)
 
     readSensors();
     updateDynamicData();
