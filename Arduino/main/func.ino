@@ -51,7 +51,7 @@ void updateDynamicData() {
   tft.setCursor(90, x_start + (shift * 4));
   tft.print(currentData.current_mA);
   tft.print("mA  ");
-  Serial.println(currentData.current_mA);
+  //Serial.println(currentData.current_mA);
 
   // 6. Пламя
   tft.setCursor(90, x_start + (shift * 5));
@@ -64,14 +64,14 @@ void updateDynamicData() {
   tft.print(gaz_tft);
 }
 
-void sendTelemetryMQTT() {
+void sendTelemetryMQTT(String time_timestamp) {
   // Выделяем память под JSON-документ (300 байт с запасом)
   StaticJsonDocument<300> doc;
 
   // Заполняем по твоему шаблону
   doc["key"] = "info_about_sensor_SAF";
   doc["uuid"] = SECRET_DEVICE_UUID;
-  doc["timestamp"] = time;
+  doc["timestamp"] = time_timestamp;
   doc["electric_current"] = currentData.current_mA;
   doc["flame"] = currentData.flame;
   doc["gas"] = currentData.gaz;

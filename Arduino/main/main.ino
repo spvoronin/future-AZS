@@ -76,6 +76,7 @@ void setup() {
   acs.autoMidPoint();
 
   setup_wifi();
+  test_send_time.timeSetting();
   client.setServer(SECRET_MQTT_SERVER, SECRET_MQTT_PORT);
 
   analogWrite(TFT_LED, brightness);
@@ -109,9 +110,11 @@ void loop() {
     lastUpdate = millis();
 
     test_send_time.timeStam();  // обновление
-    String time = String(test_send_time.timeS);
+    String time_timestamp = String(test_send_time.timeS);
 
     readSensors();
     updateDynamicData();
+
+    sendTelemetryMQTT(time_timestamp);
   }
 }
