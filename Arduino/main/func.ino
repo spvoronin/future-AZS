@@ -17,7 +17,7 @@ void readSensors() {
   // 4. Чтение датчика тока ACS712
   currentData.current_mA = acs.mA_DC();
   // Программный шумодав: если показания прыгают в пределах ±10 мА холостого хода, принудительно пишем 0
-  if (abs(currentData.current_mA) < 10) {
+  if (abs(currentData.current_mA) < 70) {
     currentData.current_mA = 0;
   }
 }
@@ -30,28 +30,28 @@ void updateDynamicData() {
   // Вывод температуры воздуха (напротив "Air Temp:")
   tft.setCursor(90, x_start);
   tft.print(currentData.airTemp, 1);  // 1 знак после запятой
-  tft.print("C ");
+  tft.print("C  ");
 
   // Вывод влажности воздуха (напротив "Air Hum:")
   tft.setCursor(90, x_start + shift);
   tft.print(currentData.airHumidity, 1);
-  tft.print("% ");
+  tft.print("%   ");
 
   // Вывод температуры топлива с будущей термопары (напротив "Fuel Temp:")
   tft.setCursor(90, x_start + (shift * 2));
   tft.print(currentData.fuelTemp, 1);
-  tft.print("C ");
+  tft.print("C  ");
 
   // Вывод уровня топлива (напротив "Fuel Level:")
   tft.setCursor(90, x_start + (shift * 3));
   tft.print(currentData.fuelLevel);
-  tft.print("% ");
+  tft.print("%   ");
 
   // 5. Ток с ACS712 (переводим в мА: умножаем на 1000)
   tft.setCursor(90, x_start + (shift * 4));
-  int current_mA = currentData.current_mA * 1000;
-  tft.print(current_mA);
-  tft.print("mA   ");
+  tft.print(currentData.current_mA);
+  tft.print("mA  ");
+  Serial.println(currentData.current_mA);
 
   // 6. Пламя
   tft.setCursor(90, x_start + (shift * 5));
@@ -62,4 +62,34 @@ void updateDynamicData() {
   tft.setCursor(90, x_start + (shift * 6));
   bool gaz_tft = map(currentData.gaz, 0, 4095, 0, 1);
   tft.print(gaz_tft);
+}
+
+void sendTelemetryMQTT() {
+  // Выделяем память под JSON-документ (300 байт с запасом)
+  StaticJsonDocument<300> doc;
+
+  // Заполняем по твоему шаблону
+  doc["key"] = "info_about_sensor_SAF";
+  doc["uuid"] = SECRET_DEVICE_UUID;
+  doc["timestamp"] = 1783412921; // Пока статический, как в задании
+  doc["electric_current"] = currentData.current_mA;
+  doc["flame"] = currentData.flame;
+  doc["gas"] = currentData.gaz;
+  doc["ambient_humidity"] = currentData.airHumidity;
+  doc["ambient_temperature"] = currentData.airTemp;
+  doc["tank_temperature"] = currentData.fuelTemp;
+  doc["water_level"] = currentData.fuelLevel;
+
+  // Конвертируем JSON в текстовую строку
+  String jsonString;
+  serializeJson(doc, jsonString);
+
+  // Выводим в Serial для контроля
+  Serial.print("Отправка пакета: ");
+  Serial.println(jsonString);
+
+  // Если связь с брокером есть - публикуем в топик из secrets.h
+  if (client.connected()) {
+    client.publish(SECRET_TOPIC_PUB, jsonString.c_str());
+  }
 }
