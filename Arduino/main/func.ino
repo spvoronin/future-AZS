@@ -71,7 +71,7 @@ void sendTelemetryMQTT() {
   // Заполняем по твоему шаблону
   doc["key"] = "info_about_sensor_SAF";
   doc["uuid"] = SECRET_DEVICE_UUID;
-  doc["timestamp"] = 1783412921; // Пока статический, как в задании
+  doc["timestamp"] = time;
   doc["electric_current"] = currentData.current_mA;
   doc["flame"] = currentData.flame;
   doc["gas"] = currentData.gaz;
