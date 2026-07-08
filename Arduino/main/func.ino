@@ -3,11 +3,14 @@ void readSensors() {
   float h = dht.readHumidity();
   float t = dht.readTemperature();
 
-  if (!isnan(h) && !isnan(t)) {   //проверка на число
-    currentData.airHumidity = h;  // Записали влажность воздуха
-    currentData.airTemp = t;      // Записали температуру воздуха
+  if (!isnan(h) && !isnan(t)) {  // проверка на число
+    h = h - h_calb;//калибровка
+    h = constrain(h, 0.0, 100.0); //ограничение
+
+    currentData.airHumidity = h;
+    currentData.airTemp = t; 
   }
-  
+
   // temp fuel
   currentData.fuelTemp = 20.5;  // Сюда пойдет код для термопары
   int rawFuel = analogRead(FUEL_PIN);

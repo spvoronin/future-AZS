@@ -61,6 +61,8 @@ struct SensorData {
 };
 SensorData currentData;
 
+const int h_calb = 0;  //разница для калибровки
+
 unsigned long lastUpdate = 0;
 const unsigned long INTERVAL = 1000;
 
