@@ -6,6 +6,7 @@
 #include <ACS712.h>
 
 #include "foto.h"
+//   #include "Cl_timestamp.h"  // для timestamp
 
 // Цвета
 #define RED_L 0xE8C6
@@ -28,6 +29,7 @@ const int shift = 14;        //регулируемый межстрочный �
 Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
 DHT dht(DHT_PIN, DHT11);
 ACS712 acs(CURRENT_PIN, 3.3, 4095, 33.77);
+timeSt test_send_time;
 
 struct SensorData {
   float airTemp = 0.0;      // Температура воздуха
@@ -83,12 +85,15 @@ void setup() {
 
   tft.setCursor(2, x_start + shift * 6);
   tft.print("Gaz:");
+
+   //test_send_time.timeSetting("pool.ntp.org", 3 * 3600, 0);  // для timestamp | GMT+3 (Москва) = 3 * 3600 секунд, Летнее время (0, если не используется)
 }
 
 void loop() {
   if (millis() - lastUpdate >= INTERVAL) {
     lastUpdate = millis();
-
+    //est_send_time.timeStam();  // обновление
+    //String time = String(test_send_time.timeS)
     readSensors();
     updateDynamicData();
   }
