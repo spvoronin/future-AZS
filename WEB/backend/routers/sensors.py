@@ -2,6 +2,7 @@ from fastapi import APIRouter
 import psycopg2
 import os
 from dotenv import load_dotenv
+import paho.mqtt.client as mqtt
 
 load_dotenv()
 
@@ -11,6 +12,11 @@ PASSWORD = os.getenv("PASSWORD")
 DATABASE = os.getenv("DATABASE")
 CONNECT = os.getenv("CONNECT")
 
+MQTT_LOGIN = os.getenv("MQTT_LOGIN")
+MQTT_PASSWORD = os.getenv("MQTT_PASSWORD")
+MQTT_ADDRESS = os.getenv("MQTT_ADDRESS")
+MQTT_PORT = os.getenv("MQTT_PORT")
+
 UUID = os.getenv("UUID")
 
 router_sensor = APIRouter(
@@ -18,6 +24,10 @@ router_sensor = APIRouter(
     tags=["Всё, что связано с датчиками"]
 )
 
+mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+mqtt_client.username_pw_set(MQTT_LOGIN, MQTT_PASSWORD)
+mqtt_client.connect(MQTT_ADDRESS, int(MQTT_PORT))
+mqtt_client.loop_start()
 
 @router_sensor.get("")
 async def get_vol_from_sensor():
@@ -50,3 +60,12 @@ async def get_vol_from_sensor():
         if connection:
             connection.close()
             print('info: коннект закрыт')
+
+@router_sensor.post("/pumps/{pumps_id}")
+async def vkl_pump(pumps_id : int):
+    MQTT_topic = f"BV/SAF/{pumps_id}"
+    result = mqtt_client.publish(MQTT_topic, "change")
+    if result.rc == mqtt.MQTT_ERR_SUCCESS:
+        return {"status": "ok", "message": f"Команда отправлена в {MQTT_topic}"}
+    else:
+        return {"status": "error", "message": "Не удалось отправить"}
