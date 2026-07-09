@@ -8,10 +8,14 @@
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 
+//подгрузка внутренних файлов
+#include "config.h"
 #include "foto.h"
 #include "secrets.h"
 #include "Cl_timestamp.h"  // для timestamp
 
+
+//подгрузка данных из secrets.h
 const char* ssid = SECRET_SSID;
 const char* password = SECRET_PASS;
 const char* mqtt_server = SECRET_MQTT_SERVER;
@@ -19,27 +23,6 @@ const int mqtt_port = SECRET_MQTT_PORT;
 const char* mqtt_user = SECRET_MQTT_USER;
 const char* mqtt_pass = SECRET_MQTT_PASS;
 const char* mqtt_topic_pub = SECRET_TOPIC_PUB;
-
-// Цвета
-#define RED_L 0xE8C6
-#define B_RED_L 0x9800
-
-const int brightness = 255;  // Яркость
-const int x_start = 45;      //начальная точка тектса по x
-const int shift = 14;        //регулируемый межстрочный интервал
-const int y_data = 85;       //положение данных влево/вправо
-
-// Пины
-#define TFT_CS 5
-#define TFT_RST 4
-#define TFT_DC 2
-#define TFT_LED 21
-#define DHT_PIN 14
-#define FUEL_PIN 34     // Аналоговый пин для уровня топлива (ADC1)
-#define CURRENT_PIN 35  // Аналоговый пин для датчика тока ACS712 (ADC1)
-#define FLAME_PIN 32    
-#define GAZ_PIN 33      
-#define RELAY_PIN 27
 
 Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
 DHT dht(DHT_PIN, DHT11);
@@ -49,27 +32,11 @@ WiFiClient espClient;
 PubSubClient client(espClient);
 timeSt test_send_time;
 
-struct SensorData {
-  float airTemp = 0.0;      // Температура воздуха
-  float airHumidity = 0.0;  // Влажность воздуха
-  float fuelTemp = 0.0;     // Температура топлива
-  int fuelLevel = 0;        // Уровень топлива в %
-  float current_mA = 0.0;   //ток
-  bool flame = false;       //пламя
-  int gaz = 0;              //газ
-  bool relay = false;
-};
-SensorData currentData;
-
-const int h_calb = 0;  //разница для калибровки
+SensorData currentData; //создание объекта структуры
 
 // Таймер для обновления экрана и чтения датчиков
 unsigned long lastDisplayUpdate = 0;
-const unsigned long DISPLAY_INTERVAL = 1000;
-
-// Таймер для отправки данных на сервер
 unsigned long lastMQTTUpdate = 0;
-const unsigned long MQTT_INTERVAL = 5000;
 
 void setup() {
   Serial.begin(115200);

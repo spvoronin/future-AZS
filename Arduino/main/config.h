@@ -1,0 +1,40 @@
+#pragma once
+#include <Arduino.h>
+
+// === НАСТРОЙКИ ПИНОВ ===
+#define TFT_CS 5
+#define TFT_RST 4
+#define TFT_DC 2
+#define TFT_LED 21
+#define DHT_PIN 14
+#define FUEL_PIN 34     // Аналоговый пин для уровня топлива (ADC1)
+#define CURRENT_PIN 35  // Аналоговый пин для датчика тока ACS712 (ADC1)
+#define FLAME_PIN 32    
+#define GAZ_PIN 33      
+#define RELAY_PIN 27
+
+// === НАСТРОЙКИ ЦВЕТОВ И ИНТЕРФЕЙСА ДИСПЛЕЯ ===
+#define RED_L 0xE8C6  //красный лукойл
+#define B_RED_L 0x9800  //тёмно-красный
+const int brightness = 255;  // яркость
+const int x_start = 45;      //начальная точка тектса по x
+const int shift = 14;        //регулируемый межстрочный интервал
+const int y_data = 85;       //положение данных влево/вправо
+
+// === НАСТРОЙКИ ТАЙМЕРОВ (ИНТЕРВАЛЫ) ===
+const unsigned long DISPLAY_INTERVAL = 1000; // вывод на экран, опрос датчиков
+const unsigned long MQTT_INTERVAL = 5000;    // отправка на сервер
+
+// === СТРУКТУРА И ДАТЧИКИ ===
+struct SensorData {
+  float airTemp = 0.0;      
+  float airHumidity = 0.0; 
+  float fuelTemp = 0.0;     
+  int fuelLevel = 0; 
+  float current_mA = 0.0;   
+  bool flame = false; 
+  int gaz = 0;              
+  bool relay = false;       
+};
+
+const int h_calb = 0;  //разница для калибровки влажности DHT11
