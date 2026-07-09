@@ -39,7 +39,7 @@ const int y_data = 85;       //положение данных влево/впр
 #define CURRENT_PIN 35  // Аналоговый пин для датчика тока ACS712 (ADC1)
 #define FLAME_PIN 32    
 #define GAZ_PIN 33      
-#define RELAY_PIN 15
+#define RELAY_PIN 27
 
 Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
 DHT dht(DHT_PIN, DHT11);
@@ -63,8 +63,13 @@ SensorData currentData;
 
 const int h_calb = 0;  //разница для калибровки
 
-unsigned long lastUpdate = 0;
-const unsigned long INTERVAL = 1000;
+// Таймер для обновления экрана и чтения датчиков
+unsigned long lastDisplayUpdate = 0;
+const unsigned long DISPLAY_INTERVAL = 1000;
+
+// Таймер для отправки данных на сервер
+unsigned long lastMQTTUpdate = 0;
+const unsigned long MQTT_INTERVAL = 5000;
 
 void setup() {
   Serial.begin(115200);
@@ -79,6 +84,7 @@ void setup() {
 
   setup_wifi();
   test_send_time.timeSetting();
+  client.setCallback(callback);
   client.setServer(SECRET_MQTT_SERVER, SECRET_MQTT_PORT);
 
   analogWrite(TFT_LED, brightness);
@@ -103,21 +109,23 @@ void setup() {
 }
 
 void loop() {
-  // Поддержание связи с брокером
   if (!client.connected()) {
     reconnect();
   }
   client.loop();
   
-  if (millis() - lastUpdate >= INTERVAL) {
-    lastUpdate = millis();
-
-    test_send_time.timeStam();  // обновление
-    String time_timestamp = String(test_send_time.timeS);
+  if (millis() - lastDisplayUpdate >= DISPLAY_INTERVAL) {
+    lastDisplayUpdate = millis();
 
     readSensors();
-    updateDynamicData();
+    updateDynamicData(); 
+  }
 
-    sendTelemetryMQTT(time_timestamp);
+  if (millis() - lastMQTTUpdate >= MQTT_INTERVAL) {
+    lastMQTTUpdate = millis();
+
+    test_send_time.timeStam(); //
+    String time_timestamp = String(test_send_time.timeS); //
+    sendTelemetryMQTT(time_timestamp); //
   }
 }
