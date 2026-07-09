@@ -39,7 +39,7 @@ const int y_data = 85;       //положение данных влево/впр
 #define CURRENT_PIN 35  // Аналоговый пин для датчика тока ACS712 (ADC1)
 #define FLAME_PIN 32    
 #define GAZ_PIN 33      
-#define RELAY_PIN 15
+#define RELAY_PIN 27
 
 Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
 DHT dht(DHT_PIN, DHT11);
@@ -64,7 +64,7 @@ SensorData currentData;
 const int h_calb = 0;  //разница для калибровки
 
 unsigned long lastUpdate = 0;
-const unsigned long INTERVAL = 1000;
+const unsigned long INTERVAL = 5000;
 
 void setup() {
   Serial.begin(115200);
@@ -79,6 +79,7 @@ void setup() {
 
   setup_wifi();
   test_send_time.timeSetting();
+  client.setCallback(callback);
   client.setServer(SECRET_MQTT_SERVER, SECRET_MQTT_PORT);
 
   analogWrite(TFT_LED, brightness);
