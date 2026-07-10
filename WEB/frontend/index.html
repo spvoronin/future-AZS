@@ -1,115 +1,13 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Заправка</title>
-<link rel="stylesheet" href="style.css" />
-</head>
-<body>
-<div class="app">
-  <div class="sidebar">
-    <a href="profile.html" title="Профиль">&#128100;</a>
-    <a href="index.html" class="active" title="Заправка">&#9981;</a>
-    <a href="#" title="Касса">&#128421;</a>
-  </div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>АЗС Система</title>
+  </head>
+  <body>
+    <div id="root"></div>
 
-  <div class="main">
-    <div class="topbar">
-      <div class="logo">ЗАПРАВКА</div>
-      <div class="station-badge" id="stationBadge">АЗС</div>
-      <button class="btn btn-outline" id="loginBtn">Вход</button>
-    </div>
-
-    <div class="content">
-      <!-- Column 1: prices + pumps -->
-      <div>
-        <div class="card" style="margin-bottom:20px;">
-          <h3>Цены на топливо</h3>
-          <div class="prices-row" id="pricesRow">
-            <div class="empty-note">Загрузка цен...</div>
-          </div>
-        </div>
-
-        <div class="card">
-          <h3>Колонки</h3>
-          <div class="pumps-row" id="pumpsRow">
-            <div class="empty-note">Загрузка колонок...</div>
-          </div>
-          <div class="your-station-box">
-            <div class="row">&#8592; Ваша АЗС</div>
-            <div class="row" id="yourStationInfo">Колонка не выбрана</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Column 2: services -->
-      <div class="card">
-        <h3>Услуги</h3>
-        <label class="service-item"><input type="checkbox" /> кофе</label>
-        <label class="service-item"><input type="checkbox" /> банкомат</label>
-        <label class="service-item"><input type="checkbox" /> выпечка</label>
-        <div class="service-note">
-          оплата картой или QR-кодом<br />
-          лимит 25 литров для физлиц<br />
-          лимит 60 литров для юрлиц
-        </div>
-      </div>
-
-      <!-- Column 3: purchase -->
-      <div class="card">
-        <h3>Покупка</h3>
-        <div style="text-align:center; font-size:13px; color:var(--text-muted); margin-bottom:6px;">Объём</div>
-        <div class="volume-row" id="volumeRow">
-          <button class="volume-btn" data-vol="10">10</button>
-          <button class="volume-btn" data-vol="15">15</button>
-          <button class="volume-btn selected" data-vol="20">20</button>
-          <input class="volume-custom" id="customVol" placeholder="…" type="number" min="1" />
-        </div>
-
-        <div class="summary-line">
-          <span>общий объём:</span>
-          <span id="sumVolume">20 л</span>
-        </div>
-        <div class="summary-line">
-          <span>цена за литр:</span>
-          <span id="sumPrice">—</span>
-        </div>
-        <div class="summary-line total">
-          <span>итого:</span>
-          <span id="sumTotal">0 ₽</span>
-        </div>
-
-        <button class="btn btn-red pay-btn" id="payBtn">Оплатить</button>
-        <div class="error-text" id="payError"></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Login modal -->
-<div class="modal-overlay hidden" id="loginOverlay">
-  <div class="modal">
-    <h2>Вход</h2>
-    <div class="field">
-      <label>Email</label>
-      <input type="email" id="loginEmail" placeholder="ivanov@mail.com" />
-    </div>
-    <div class="field">
-      <label>Пароль</label>
-      <input type="password" id="loginPassword" placeholder="••••••••" />
-    </div>
-    <div class="error-text" id="loginError"></div>
-    <div class="modal-actions">
-      <button class="btn" style="background:#eee;" id="loginCancel">Отмена</button>
-      <button class="btn btn-red" id="loginSubmit">Войти</button>
-    </div>
-  </div>
-</div>
-
-<script src="config.js"></script>
-<script src="api.js"></script>
-<script src="session.js"></script>
-<script src="main.js"></script>
-</body>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
 </html>

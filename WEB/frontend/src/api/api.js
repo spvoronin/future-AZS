@@ -1,12 +1,13 @@
-// Тонкая обёртка над fetch для общения с бэкендом.
-const Api = {
+const API_BASE = "http://127.0.0.1:8000"; // Твой бэкенд FastAPI
+
+export const Api = {
   async _request(method, path, body) {
     const opts = { method, headers: {} };
     if (body !== undefined) {
       opts.headers["Content-Type"] = "application/json";
       opts.body = JSON.stringify(body);
     }
-    const res = await fetch(window.APP_CONFIG.API_BASE + path, opts);
+    const res = await fetch(API_BASE + path, opts);
     let data = null;
     try {
       data = await res.json();
@@ -20,20 +21,10 @@ const Api = {
     return data;
   },
 
-  get(path) {
-    return this._request("GET", path);
-  },
-  post(path, body) {
-    return this._request("POST", path, body);
-  },
-  put(path, body) {
-    return this._request("PUT", path, body);
-  },
-  del(path) {
-    return this._request("DELETE", path);
-  },
+  get(path) { return this._request("GET", path); },
+  post(path, body) { return this._request("POST", path, body); },
 
-  // --- users ---
+  // --- Пользователи ---
   login(email, password_hash) {
     return this.post("/users/login", { email, password_hash });
   },
@@ -41,24 +32,26 @@ const Api = {
     return this.get("/users");
   },
 
-  // --- stations ---
+  // --- Станции и Колонки ---
   getStations() {
     return this.get("/stations");
-  },
-  getStation(id) {
-    return this.get(`/stations/${id}`);
   },
   getStationPumps(stationId) {
     return this.get(`/stations/${stationId}/pumps`);
   },
 
-  // --- prices ---
+  // --- Цены ---
   getPrices(stationId) {
     return this.get(`/prices/${stationId}`);
   },
 
-  // --- transactions ---
+  // --- Транзакции ---
   createTransaction(payload) {
     return this.post("/transactions", payload);
+  },
+
+  // --- Датчики (Новое) ---
+  getSensors() {
+    return this.get("/sensors");
   }
 };
