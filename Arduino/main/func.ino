@@ -11,8 +11,16 @@ void readSensors() {
     currentData.airTemp = t; 
   }
 
-  // temp fuel
-  currentData.fuelTemp = 20.5;  // Сюда пойдет код для термопары
+  /// 2. Т топлива
+  dsSensors.requestTemperatures();
+  float tempFuel = dsSensors.getTempCByIndex(0);
+  if (tempFuel != DEVICE_DISCONNECTED_C) {
+    currentData.fuelTemp = tempFuel;
+  } else {
+    Serial.println("Ошибка: Датчик DS18B20 не найден или отключен");
+  }
+
+  //3. Уровень топлива
   int rawFuel = analogRead(FUEL_PIN);
   currentData.fuelLevel = map(rawFuel, 0, 4095, 0, 100);
   currentData.fuelLevel = constrain(currentData.fuelLevel, 0, 100);  //ограничитель

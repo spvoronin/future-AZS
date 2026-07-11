@@ -7,6 +7,8 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
 
 //подгрузка внутренних файлов
 #include "config.h"
@@ -28,6 +30,9 @@ Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
 DHT dht(DHT_PIN, DHT11);
 ACS712 acs(CURRENT_PIN, 3.3, 4095, 185);
 
+OneWire oneWire(DS18B20_PIN);          // Настраиваем шину 1-Wire на нашем пине
+DallasTemperature dsSensors(&oneWire);
+
 WiFiClient espClient;
 PubSubClient client(espClient);
 timeSt test_send_time;
@@ -41,6 +46,7 @@ unsigned long lastMQTTUpdate = 0;
 void setup() {
   Serial.begin(115200);
   dht.begin();
+  dsSensors.begin();
  
   pinMode(FUEL_PIN, INPUT);
   pinMode(CURRENT_PIN, INPUT);

@@ -12,6 +12,7 @@
 #define FLAME_PIN 32    
 #define GAZ_PIN 33      
 #define RELAY_PIN 27
+#define DS18B20_PIN 26
 
 // === НАСТРОЙКИ ЦВЕТОВ И ИНТЕРФЕЙСА ДИСПЛЕЯ ===
 #define RED_L 0xE8C6  //красный лукойл
