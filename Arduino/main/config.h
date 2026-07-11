@@ -5,7 +5,7 @@
 #define TFT_CS 5
 #define TFT_RST 4
 #define TFT_DC 2
-#define TFT_LED 21
+#define TFT_BL 21
 #define DHT_PIN 14
 #define FUEL_PIN 34     // Аналоговый пин для уровня топлива (ADC1)
 #define CURRENT_PIN 35  // Аналоговый пин для датчика тока ACS712 (ADC1)
@@ -13,14 +13,16 @@
 #define GAZ_PIN 33      
 #define RELAY_PIN 27
 #define DS18B20_PIN 26
+#define ZUM_PIN 25
 
 // === НАСТРОЙКИ ЦВЕТОВ И ИНТЕРФЕЙСА ДИСПЛЕЯ ===
 #define RED_L 0xE8C6  //красный лукойл
-#define B_RED_L 0x9800  //тёмно-красный
+#define ILI9341_RED_L_B 0x9800  //тёмно-красный
 const int brightness = 255;  // яркость
-const int x_start = 45;      //начальная точка тектса по x
-const int shift = 14;        //регулируемый межстрочный интервал
-const int y_data = 85;       //положение данных влево/вправо
+const int x_start = 100;     //начальная точка тектса по x
+const int shift = 20;        //регулируемый межстрочный интервал
+const int y_data = 150;      //положение данных влево/вправо
+const int y_start = 10;     //начало надписей
 
 // === НАСТРОЙКИ ТАЙМЕРОВ (ИНТЕРВАЛЫ) ===
 const unsigned long DISPLAY_INTERVAL = 1000; // вывод на экран, опрос датчиков

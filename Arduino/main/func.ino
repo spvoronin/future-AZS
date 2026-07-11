@@ -3,12 +3,12 @@ void readSensors() {
   float h = dht.readHumidity();
   float t = dht.readTemperature();
 
-  if (!isnan(h) && !isnan(t)) {  // проверка на число
-    h = h - h_calb;//калибровка
-    h = constrain(h, 0.0, 100.0); //ограничение
+  if (!isnan(h) && !isnan(t)) {    // проверка на число
+    h = h - h_calb;                //калибровка
+    h = constrain(h, 0.0, 100.0);  //ограничение
 
     currentData.airHumidity = h;
-    currentData.airTemp = t; 
+    currentData.airTemp = t;
   }
 
   /// 2. Т топлива
@@ -35,8 +35,8 @@ void readSensors() {
 
 // Функция обновления живых данных на экране
 void updateDynamicData() {
-  tft.setTextColor(ST7735_BLACK, ST7735_WHITE);
-  tft.setTextSize(1);
+  tft.setTextColor(ST77XX_BLACK, ST77XX_WHITE);
+  tft.setTextSize(2);
 
   // Вывод температуры воздуха (напротив "Air Temp:")
   tft.setCursor(y_data, x_start);
