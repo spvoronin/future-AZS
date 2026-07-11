@@ -10,7 +10,7 @@
 - [📝 О проекте](#-о-проекте)
 - [📁 Структура репозитория](#-структура-репозитория)
 - [📐 Архитектура системы](#-архитектура-системы)
-- [💻 Backend ( WEB/backend )](#-backend--webbackend-)
+- [💻 Backend ( WEB/backend )](#-backend--webbackend)
 - [🔧 Embedded / ESP32 (`Arduino/main`)](#-embedded--esp32-arduinomain)
 - [🌐 Frontend (`WEB/frontend`)](#-frontend-webfrontend)
 - [🔍 Распознавание номеров (`analiz_num`)](#-распознавание-номеров-analiz_num)
