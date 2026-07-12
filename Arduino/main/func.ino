@@ -17,7 +17,7 @@ void readSensors() {
   if (tempFuel != DEVICE_DISCONNECTED_C) {
     currentData.fuelTemp = tempFuel;
   } else {
-    Serial.println("Ошибка: Датчик DS18B20 не найден или отключен");
+    //Serial.println("Ошибка: Датчик DS18B20 не найден или отключен");
   }
 
   //3. Уровень топлива
@@ -26,10 +26,20 @@ void readSensors() {
   currentData.fuelLevel = constrain(currentData.fuelLevel, 0, 100);  //ограничитель
 
   // 4. Чтение датчика тока ACS712
-  currentData.current_mA = acs.mA_DC();
-  // Программный шумодав: если показания прыгают в пределах ±10 мА холостого хода, принудительно пишем 0
-  if (abs(currentData.current_mA) < 150) {
-    currentData.current_mA = 0;
+  //currentData.current_mA = acs.mA_DC();
+  //Программный шумодав : если показания прыгают в пределах ±10 мА холостого хода, принудительно пишем 0
+  //if (abs(currentData.current_mA) < 150||abs(currentData.current_mA) < 0) {
+  //  currentData.current_mA = 0;
+  //}
+
+  currentData.gaz = analogRead(GAZ_PIN);  // Считываем аналоговое значение (0 - 4095)
+
+  // В чистом воздухе датчик обычно выдает в районе 400-800
+  // Если значение больше 1300 - это явный газ или дым
+  if (currentData.gaz > 1300) {
+    tone(ZUM_PIN, 1000); 
+  } else {
+    noTone(ZUM_PIN);
   }
 }
 
@@ -71,6 +81,7 @@ void updateDynamicData() {
 
   // 7. Газ
   tft.setCursor(y_data, x_start + (shift * 6));
-  bool gaz_tft = map(currentData.gaz, 0, 4095, 0, 1);
+  int gaz_tft = map(currentData.gaz, 0, 4095, 0, 100);
   tft.print(gaz_tft);
+  tft.print("%   ");
 }
