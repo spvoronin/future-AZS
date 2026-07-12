@@ -26,6 +26,7 @@ const char* mqtt_user = SECRET_MQTT_USER;
 const char* mqtt_pass = SECRET_MQTT_PASS;
 const char* mqtt_topic_pub = SECRET_TOPIC_PUB;
 
+//создание объектов
 Adafruit_ST7789 tft = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
 DHT dht(DHT_PIN, DHT11);
 ACS712 acs(CURRENT_PIN, 3.3, 4095, 185);
@@ -62,14 +63,12 @@ void setup() {
 
   analogWrite(TFT_BL, brightness);
   
-  // Для ST7789 запуск идет через .init() с указанием разрешения экрана
   tft.init(240, 320);           
-  tft.setRotation(2); // Поворот экрана (если изображение будет перевернуто, поменяй на 3)
+  tft.setRotation(2); // Поворот экрана
   
   // В библиотеке ST7789 константы цветов называются ST77XX_...
   tft.fillScreen(ST77XX_WHITE); 
 
-  // Выводим картинку
   tft.drawRGBBitmap(0, 0, vertical_SAF, IMG_WIDTH, IMG_HEIGHT);
   
   tft.setTextColor(ST77XX_RED);
