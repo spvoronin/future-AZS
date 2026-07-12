@@ -2,7 +2,7 @@
 
 **Цифровая экосистема автономной модульной АЗС**: FastAPI-бэкенд на чистом SQL, веб-интерфейс клиента, мониторинг состояния АЗС с системами безопасности с помощью датчиков и контроллера на базе esp32, дистанционное управление, вывод логов и телеметрии по MQTT.
 
-![Python](https://img.shields.io/badge/Python-3.11+-blue?logo=python&logoColor=white) ![FastAPI](https://img.shields.io/badge/FastAPI-async-009688?logo=fastapi&logoColor=white) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-psycopg2-336791?logo=postgresql&logoColor=white) ![ESP32](https://img.shields.io/badge/ESP32-Arduino-E7352C?logo=espressif&logoColor=white) ![MQTT](https://img.shields.io/badge/MQTT-telemetry-660066?logo=mqtt&logoColor=white) ![License](https://img.shields.io/badge/license-All%20Rights%20Reserved-red)
+![Python](https://img.shields.io/badge/Python-3.11+-blue?logo=python&logoColor=white) ![FastAPI](https://img.shields.io/badge/FastAPI-async-009688?logo=fastapi&logoColor=white) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-psycopg2-336791?logo=postgresql&logoColor=white) ![React](https://img.shields.io/badge/React-Vite%20%2F%20JS-20232a?logo=react&logoColor=61DAFB) ![ESP32](https://img.shields.io/badge/ESP32-Arduino-E7352C?logo=espressif&logoColor=white) ![MQTT](https://img.shields.io/badge/MQTT-telemetry-660066?logo=mqtt&logoColor=white) ![License](https://img.shields.io/badge/license-All%20Rights%20Reserved-red)
 
 ---
 ## 📖 Содержание
