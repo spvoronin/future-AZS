@@ -3,16 +3,24 @@ void readSensors() {
   float h = dht.readHumidity();
   float t = dht.readTemperature();
 
-  if (!isnan(h) && !isnan(t)) {  // проверка на число
-    h = h - h_calb;//калибровка
-    h = constrain(h, 0.0, 100.0); //ограничение
+  if (!isnan(h) && !isnan(t)) {    // проверка на число
+    h = h - h_calb;                //калибровка
+    h = constrain(h, 0.0, 100.0);  //ограничение
 
     currentData.airHumidity = h;
-    currentData.airTemp = t; 
+    currentData.airTemp = t;
   }
 
-  // temp fuel
-  currentData.fuelTemp = 20.5;  // Сюда пойдет код для термопары
+  /// 2. Т топлива
+  dsSensors.requestTemperatures();
+  float tempFuel = dsSensors.getTempCByIndex(0);
+  if (tempFuel != DEVICE_DISCONNECTED_C) {
+    currentData.fuelTemp = tempFuel;
+  } else {
+    Serial.println("Ошибка: Датчик DS18B20 не найден или отключен");
+  }
+
+  //3. Уровень топлива
   int rawFuel = analogRead(FUEL_PIN);
   currentData.fuelLevel = map(rawFuel, 0, 4095, 0, 100);
   currentData.fuelLevel = constrain(currentData.fuelLevel, 0, 100);  //ограничитель
@@ -27,8 +35,8 @@ void readSensors() {
 
 // Функция обновления живых данных на экране
 void updateDynamicData() {
-  tft.setTextColor(ST7735_BLACK, ST7735_WHITE);
-  tft.setTextSize(1);
+  tft.setTextColor(ST77XX_BLACK, ST77XX_WHITE);
+  tft.setTextSize(2);
 
   // Вывод температуры воздуха (напротив "Air Temp:")
   tft.setCursor(y_data, x_start);
