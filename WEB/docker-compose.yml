@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  # 1. База данных PostgreSQL
+  db:
+    image: postgres:15-alpine
+    container_name: azs_database
+    environment:
+      POSTGRES_USER: eseninka
+      POSTGRES_PASSWORD: 182630456  # Придумай пароль
+      POSTGRES_DB: SAF
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Монтируем init.sql прямо из твоей папки backend
+      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: always
+
+  # 2. Основной бэкенд (FastAPI)
+  backend:
+    build: ./backend
+    container_name: azs_fastapi_backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - db
+    restart: always
+
+  # 3. MQTT-воркер (запускается из того же образа бэкенда, но выполняет worker_mqtt.py)
+  mqtt_worker:
+    build: ./backend
+    container_name: azs_mqtt_worker
+    command: python worker_mqtt.py
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - db
+    restart: always
+
+  # 4. Фронтенд (React + Vite)
+  frontend:
+    build: ./frontend
+    container_name: azs_react_frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - backend
+    restart: always
+
+volumes:
+  pgdata:
