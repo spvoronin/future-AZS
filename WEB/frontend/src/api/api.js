@@ -1,4 +1,4 @@
-const API_BASE = "api.smartaf.ru"; // Твой бэкенд FastAPI
+const API_BASE = "https://api.smartaf.ru"; // Твой бэкенд FastAPI
 
 export const Api = {
   async _request(method, path, body) {
