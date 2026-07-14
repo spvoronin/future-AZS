@@ -41,6 +41,13 @@ void readSensors() {
   } else {
     noTone(ZUM_PIN);
   }
+
+  int rawFlame = analogRead(FLAME_PIN);
+  if (rawFlame < 1500) {
+    currentData.flame = true;
+  } else {
+    currentData.flame = false;
+  }
 }
 
 // Функция обновления живых данных на экране
@@ -76,8 +83,7 @@ void updateDynamicData() {
 
   // 6. Пламя
   tft.setCursor(y_data, x_start + (shift * 5));
-  bool flame_tft = map(currentData.flame, 0, 4095, 0, 1);
-  tft.print(flame_tft);
+  tft.print(currentData.flame ? "ALARM" : "SAFE ");
 
   // 7. Газ
   tft.setCursor(y_data, x_start + (shift * 6));
