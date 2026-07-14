@@ -31,6 +31,9 @@ export const Api = {
   getAllUsers() {
     return this.get("/users");
   },
+  register(formData){
+    return this.post("/users/register", formData)
+  },
 
   // --- Станции и Колонки ---
   getStations() {
