@@ -5,6 +5,7 @@ import { Api } from './api/api';
 import GasStation from './pages/GasStation';
 import Profile from './pages/Profile';
 import Sensors from './pages/Sensors';
+import Register from './pages/Register';
 
 function Sidebar() {
   const location = useLocation();
@@ -87,6 +88,16 @@ function LoginModal({ isOpen, onClose }) {
           <button className="btn" style={{ background: '#eee', color: '#000' }} onClick={onClose}>Отмена</button>
           <button className="btn btn-red" onClick={handleSubmit}>Войти</button>
         </div>
+        <div className="register-prompt">
+            Нет аккаунта?
+             <Link
+                to="/register"
+                onClick={onClose}
+                style={{ color: 'blue' }}
+             >
+             Зарегистрироваться
+             </Link>
+        </div>
       </div>
     </div>
   );
@@ -106,6 +117,7 @@ function MainLayout() {
             <Route path="/" element={<GasStation setStationLabel={setStationLabel} />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/sensors" element={<Sensors />} />
+            <Route path="/register" element={<Register />} />
           </Routes>
         </div>
       </div>
