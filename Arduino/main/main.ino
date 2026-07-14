@@ -9,13 +9,13 @@
 #include <ArduinoJson.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
+#include <FastLED.h>
 
 //подгрузка внутренних файлов
 #include "config.h"
 #include "foto.h"
 #include "secrets.h"
 #include "Cl_timestamp.h"  // для timestamp
-
 
 //подгрузка данных из secrets.h
 const char* ssid = SECRET_SSID;
@@ -30,6 +30,7 @@ const char* mqtt_topic_pub = SECRET_TOPIC_PUB;
 Adafruit_ST7789 tft = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
 DHT dht(DHT_PIN, DHT11);
 ACS712 acs(CURRENT_PIN, 3.3, 4095, 185);
+CRGB leds[LED_NUM];
 
 OneWire oneWire(DS18B20_PIN);          // Настраиваем шину 1-Wire на нашем пине
 DallasTemperature dsSensors(&oneWire);
@@ -49,6 +50,15 @@ void setup() {
   dht.begin();
   dsSensors.begin();
  
+  FastLED.addLeds<WS2812B, LED_PIN, GRB>(leds, LED_NUM);
+  FastLED.setBrightness(BRIGHTNESS);
+  FastLED.clear();
+  FastLED.show();
+  delay(5); //надо попробовать убрать
+  fill_solid(leds, LED_NUM, CRGB(255, 147, 41));
+  //FastLED.showColor(CRGB::Red);
+  FastLED.show();
+
   pinMode(FUEL_PIN, INPUT);
   pinMode(CURRENT_PIN, INPUT);
   pinMode(FLAME_PIN, INPUT);
@@ -81,7 +91,7 @@ void setup() {
   tft.setCursor(y_start, x_start + shift * 4); tft.print("Current:");
   tft.setCursor(y_start, x_start + shift * 5); tft.print("Flame:");
   tft.setCursor(y_start, x_start + shift * 6); tft.print("Gaz:");
-  
+
   acs.autoMidPoint();
 }
 
