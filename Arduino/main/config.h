@@ -14,10 +14,6 @@
 #define RELAY_PIN 27
 #define DS18B20_PIN 26
 #define ZUM_PIN 25
-#define LED_PIN 27  // Пин, к которому подключен DIN ленты
-
-#define LED_NUM 5  // Количество светодиодов в твоей ленте
-#define BRIGHTNESS 15
 
 // === НАСТРОЙКИ ЦВЕТОВ И ИНТЕРФЕЙСА ДИСПЛЕЯ ===
 #define RED_L 0xE8C6            //красный лукойл
