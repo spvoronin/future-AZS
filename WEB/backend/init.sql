@@ -107,3 +107,25 @@ water_level int not null, -- уровень воды
 time timestamp default current_timestamp, -- время пинга
 constraint fk_uuid foreign key (uuid) references uuid(uuid) on delete cascade
 );
+
+create table cam
+(
+cam_id serial primary key,
+uuid text not null UNIQUE
+);
+
+create table images
+(
+image_id serial primary key,
+image_time timestamp default current_timestamp,
+image_data BYTEA not null,
+cam_id int not null,
+constraint key_cam_id foreign key(cam_id) references cam(cam_id)
+);
+
+create table number_of_car
+(
+id serial primary key,
+image_id int not null UNIQUE,
+number_car varchar(20) not null UNIQUE
+)
