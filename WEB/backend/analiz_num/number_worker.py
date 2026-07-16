@@ -1,9 +1,6 @@
 import os
-import time
 from analiz_num import photo_processing
 from dotenv import load_dotenv
-import io
-import psycopg2
 import paho.mqtt.client as mqtt
 
 load_dotenv()

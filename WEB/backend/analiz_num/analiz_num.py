@@ -5,6 +5,7 @@ import requests
 from PIL import Image
 import io
 import numpy as np
+import re
 
 # 1. Инициализируем EasyOCR для распознавания русского и английского текста.
 # gpu=False означает, что нейросеть будет работать на процессоре (так надежнее для старта).
@@ -37,7 +38,8 @@ class photo_processing:
                     if id_cam == 0:
                         cursor.execute('insert into cam(uuid) values (%s) returning cam_id', (self.uuid,))
                         id_cam = cursor.fetchone()[0]
-                    cursor.execute('insert into images(image_data, cam_id) values (%s, %s)', (psycopg2.Binary(response.content), id_cam))
+                    cursor.execute('insert into images(image_data, cam_id) values (%s, %s)',
+                                   (psycopg2.Binary(response.content), id_cam))
         except Exception as e:
             print(f"Ошибка: {e}")
         finally:
@@ -54,12 +56,14 @@ class photo_processing:
             with connection.cursor() as cursor:
                 cursor.execute('select cam_id from cam where uuid=%s', (self.uuid,))
                 id_cam = cursor.fetchone()[0]
-                cursor.execute('select image_id, image_data from images where cam_id=%s order by image_id desc', (id_cam,))
+                cursor.execute('select image_id, image_data from images where cam_id=%s order by image_id desc limit 1',
+                               (id_cam,))
                 res = cursor.fetchone()
                 data = res[1]
                 image_id = res[0]
+                byte_data = bytes(data)
+                nparr = np.frombuffer(byte_data, np.uint8)
 
-                nparr = np.frombuffer(data, np.uint8)
                 img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
                 gr = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -77,12 +81,19 @@ class photo_processing:
                     result = self.reader.readtext(roi_plate)
                     if not result:
                         continue
+                    raw_text = "".join([block[1] for block in result]).upper().replace(" ", "")
+                    car_number = re.sub(r'[^A-ZА-Я0-9]', '', raw_text)
+                    pattern = r'^[A-ZА-Я]\d{3}[A-ZА-Я]{2}\d{2,3}$'
+                    if re.match(pattern, car_number):
+                        cursor.execute(
+                            'insert into number_of_car(image_id, number_car) values (%s, %s)',
+                            (image_id, car_number)
+                        )
+                        return car_number.upper()
                     # EasyOCR возвращает список. Для каждого найденного слова он выдает:
                     # [координаты_границ, сам_текст, уверенность_в_распознавании]
                     # Очищаем полученный текст от случайных пробелов
-                    car_number = "".join(result[0][1].split())
-                    cursor.execute('insert into number_of_car(image_id, number_car) values (%s, %s)', (image_id, car_number))
-                    return car_number.upper()
+                return "ФОРМАТ_НЕ_РАСПОЗНАН"
         except Exception as e:
             print(f"Ошибка: {e}")
         finally:
