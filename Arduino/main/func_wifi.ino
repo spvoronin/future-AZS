@@ -23,6 +23,8 @@ void reconnect() {
 
       client.subscribe("BV/SAF/1");
       Serial.println("Подписка на топик BV/SAF/1 оформлена.");
+      client.subscribe("BV/SAF/cam/response");
+      Serial.println("Подписка на топик BV/SAF/cam/response оформлена.");
     } else {
       Serial.print("Ошибка, код = ");
       Serial.print(client.state());
@@ -86,5 +88,16 @@ void callback(char* topic, byte* payload, unsigned int length) {
       Serial.print("Реле: ");
       Serial.println(currentData.relay ? "ВКЛ (HIGH)" : "ВЫКЛ (LOW)");
     }
+  }
+
+  if (String(topic) == "BV/SAF/cam/response") {
+    // Устанавливаем цвета: черный текст на белом фоне (чтобы затирать старые буквы)
+    tft.setTextColor(ST77XX_BLACK, ST77XX_WHITE);
+    tft.setTextSize(2);
+    
+    tft.setCursor(y_start, x_start + shift * 7); // 
+    tft.print(message);
+
+    tft.print("        "); 
   }
 }

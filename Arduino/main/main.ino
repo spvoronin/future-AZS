@@ -43,6 +43,11 @@ SensorData currentData; //создание объекта структуры
 unsigned long lastDisplayUpdate = 0;
 unsigned long lastMQTTUpdate = 0;
 
+//для кнопки
+bool lastButtonState = HIGH;
+unsigned long lastDebounceTime = 0;
+const unsigned long DEBOUNCE_DELAY = 300;
+
 void setup() {
   Serial.begin(115200);
   dht.begin();
@@ -53,6 +58,7 @@ void setup() {
   pinMode(FLAME_PIN, INPUT);
   pinMode(GAZ_PIN, INPUT);
   pinMode(RELAY_PIN, OUTPUT);
+  pinMode(BUT_PIN, INPUT_PULLUP);
   digitalWrite(RELAY_PIN, LOW);
   pinMode(ZUM_PIN, OUTPUT);
   noTone(ZUM_PIN);
@@ -102,8 +108,20 @@ void loop() {
   if (millis() - lastMQTTUpdate >= MQTT_INTERVAL) {
     lastMQTTUpdate = millis();
 
-    test_send_time.timeStam(); //
+    test_send_time.timeStam();
     String time_timestamp = String(test_send_time.timeS); //
-    sendTelemetryMQTT(time_timestamp); //
+    sendTelemetryMQTT(time_timestamp);
   }
+
+  bool currentButtonState = digitalRead(BUT_PIN);
+
+  // Проверяем переход с HIGH на LOW И контролируем, прошло ли достаточно времени с прошлого клика
+  if (currentButtonState == LOW && lastButtonState == HIGH && (millis() - lastDebounceTime >= DEBOUNCE_DELAY)) {
+    lastDebounceTime = millis(); // Сбрасываем таймер
+    if (client.connected()) {
+      client.publish("BV/SAF/cam/request", "photo");
+      Serial.println("Отправлено: photo");
+    }
+  }
+  lastButtonState = currentButtonState;
 }
