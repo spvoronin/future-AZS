@@ -54,6 +54,8 @@ void setup() {
   pinMode(GAZ_PIN, INPUT);
   pinMode(RELAY_PIN, OUTPUT);
   digitalWrite(RELAY_PIN, LOW);
+  pinMode(ZUM_PIN, OUTPUT);
+  noTone(ZUM_PIN);
 
   setup_wifi();
   test_send_time.timeSetting();
@@ -79,7 +81,7 @@ void setup() {
   tft.setCursor(y_start, x_start + shift * 3); tft.print("Fuel Level:");
   tft.setCursor(y_start, x_start + shift * 4); tft.print("Current:");
   tft.setCursor(y_start, x_start + shift * 5); tft.print("Flame:");
-  tft.setCursor(y_start, x_start + shift * 6); tft.print("Gaz:");
+  tft.setCursor(y_start, x_start + shift * 6); tft.print("Gas:");
 
   acs.autoMidPoint();
 }

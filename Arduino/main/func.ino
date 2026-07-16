@@ -1,3 +1,8 @@
+#define RL_RESISTOR          1000.0  // Сопротивление резистора нагрузки на плате модуля (обычно 1 кОм = 1000 Ом)
+#define R0_CLEAN_AIR         10000.0 // Сопротивление датчика в чистом воздухе (примерно 10 кОм = 10000 Ом)
+#define MQ2_A_COEFF          574.25  // Коэффициент 'a' из даташита для сжиженного газа (LPG)
+#define MQ2_B_COEFF          -2.222  // Коэффициент 'b' из даташита для сжиженного газа (LPG)
+
 void readSensors() {
   //DHT11
   float h = dht.readHumidity();
@@ -32,14 +37,17 @@ void readSensors() {
   //  currentData.current_mA = 0;
   //}
 
-  currentData.gaz = analogRead(GAZ_PIN);  // Считываем аналоговое значение (0 - 4095)
+  currentData.gaz = getGasPPM();
 
-  // В чистом воздухе датчик обычно выдает в районе 400-800
-  // Если значение больше 1300 - это явный газ или дым
-  if (currentData.gaz > 1300) {
-    tone(ZUM_PIN, 1000); 
+//zummer
+  if (millis() > 60000) { 
+    if (currentData.gaz > 600) { 
+      tone(ZUM_PIN, 1000);
+    } else {
+      noTone(ZUM_PIN);
+    }
   } else {
-    noTone(ZUM_PIN);
+    noTone(ZUM_PIN); 
   }
 
   int rawFlame = analogRead(FLAME_PIN);
@@ -87,7 +95,32 @@ void updateDynamicData() {
 
   // 7. Газ
   tft.setCursor(y_data, x_start + (shift * 6));
-  int gaz_tft = map(currentData.gaz, 0, 4095, 0, 100);
-  tft.print(gaz_tft);
-  tft.print("%   ");
+  //int gaz_tft = map(currentData.gaz, 0, 4095, 0, 100);
+  tft.print(currentData.gaz);
+  tft.print("ppm ");
+}
+
+float getGasPPM() {
+  // 1. Считываем сырое значение АЦП (для ESP32 это диапазон 0...4095)
+  int rawADC = analogRead(GAZ_PIN);
+  
+  // 2. Переводим АЦП в Вольты. У ESP32 опорное напряжение 3.3В
+  float voltage = (float)rawADC * (3.3 / 4095.0);
+  
+  // Защита от деления на ноль, если датчик отключен или пин притянут к земле
+  if (voltage < 0.1) {
+    return 0.0; 
+  }
+  
+  // 3. Вычисляем текущее сопротивление датчика Rs по формуле делителя напряжения
+  // Rs = ((Vcc - Vout) * Rl) / Vout
+  float Rs = ((3.3 - voltage) * RL_RESISTOR) / voltage;
+  
+  // 4. Находим отношение Rs к R0 (сопротивлению в чистом воздухе)
+  float ratio = Rs / R0_CLEAN_AIR;
+  
+  // 5. Вычисляем итоговое значение PPM по степенной функции pow(основание, степень)
+  float ppm = MQ2_A_COEFF * pow(ratio, MQ2_B_COEFF);
+  
+  return ppm;
 }

@@ -46,7 +46,7 @@ void sendTelemetryMQTT(String time_timestamp) {
   doc["gas"] = currentData.gaz;
   doc["ambient_humidity"] = currentData.airHumidity;
   doc["ambient_temperature"] = currentData.airTemp;
-  doc["tank_temperature"] = currentData.fuelTemp;
+  doc["tank_temperature"] = round(currentData.fuelTemp * 100.0) / 100.0;
   doc["water_level"] = currentData.fuelLevel;
 
   // Конвертируем JSON в текстовую строку
