@@ -4,6 +4,7 @@ import { Api } from '../api/api';
 export default function Sensors() {
   const [sensorData, setSensorData] = useState(null);
   const [error, setError] = useState('');
+  const [releStatus, setReleStatus] = useState(false)
 
   const fetchSensors = async () => {
     try {
@@ -16,6 +17,19 @@ export default function Sensors() {
       }
     } catch (err) {
       setError('Не удалось загрузить данные с датчиков');
+    }
+  };
+
+  const handleReleBtnClick = async () => {
+    setReleStatus(!releStatus);
+    const pumpId = 1;
+    try {
+      await Api.postRele(pumpId);
+      setError('');
+    } catch (err) {
+      console.error("Ошибка при переключении реле:", err);
+      setError('Не удалось переключить реле');
+      setReleStatus(releStatus);
     }
   };
 
@@ -40,7 +54,7 @@ export default function Sensors() {
             <span className="value"><b>{sensorData.water_level} %</b></span>
           </div>
           <div className="info-row">
-            <span className="label">Температура внутри</span>
+            <span className="label">Температура цистерны</span>
             <span className="value">{sensorData.tank_temperature} °C</span>
           </div>
           <div className="info-row">
@@ -63,6 +77,9 @@ export default function Sensors() {
           </div>
         </div>
       )}
+    <button className={`toggle-btn ${releStatus ? 'active' : ''}`} onClick={handleReleBtnClick}>
+      {releStatus ? 'ON' : 'OFF'}
+    </button>
     </div>
   );
 }
