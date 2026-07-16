@@ -54,6 +54,8 @@ void setup() {
   pinMode(GAZ_PIN, INPUT);
   pinMode(RELAY_PIN, OUTPUT);
   digitalWrite(RELAY_PIN, LOW);
+  pinMode(ZUM_PIN, OUTPUT);
+  noTone(ZUM_PIN);
 
   setup_wifi();
   test_send_time.timeSetting();

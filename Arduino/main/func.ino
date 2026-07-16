@@ -39,13 +39,16 @@ void readSensors() {
 
   currentData.gaz = getGasPPM();
 
-  // В чистом воздухе датчик обычно выдает в районе 400-800
-  // Если значение больше 1300 - это явный газ или дым
-  // if (currentData.gaz > 1300) {
-  //   tone(ZUM_PIN, 1000); 
-  // } else {
-  //   noTone(ZUM_PIN);
-  // }
+//zummer
+  if (millis() > 60000) { 
+    if (currentData.gaz > 600) { 
+      tone(ZUM_PIN, 1000);
+    } else {
+      noTone(ZUM_PIN);
+    }
+  } else {
+    noTone(ZUM_PIN); 
+  }
 
   int rawFlame = analogRead(FLAME_PIN);
   if (rawFlame < 1500) {
