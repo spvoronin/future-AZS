@@ -56,5 +56,9 @@ export const Api = {
   // --- Датчики (Новое) ---
   getSensors() {
     return this.get("/sensors");
+  },
+
+  postRele(pump_id) {
+    return this.post(`/sensors/pumps/${pump_id}`)
   }
 };
