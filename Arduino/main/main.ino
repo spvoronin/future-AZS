@@ -81,7 +81,7 @@ void setup() {
   tft.setCursor(y_start, x_start + shift * 3); tft.print("Fuel Level:");
   tft.setCursor(y_start, x_start + shift * 4); tft.print("Current:");
   tft.setCursor(y_start, x_start + shift * 5); tft.print("Flame:");
-  tft.setCursor(y_start, x_start + shift * 6); tft.print("Gaz:");
+  tft.setCursor(y_start, x_start + shift * 6); tft.print("Gas:");
 
   acs.autoMidPoint();
 }
