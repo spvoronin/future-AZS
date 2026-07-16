@@ -512,3 +512,56 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* Базовые стили для кнопки реле */
+.toggle-btn {
+  display: block;
+  width: 100%;
+  margin-top: 24px;
+  padding: 14px 24px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+
+  /* Плавные переходы для всех анимаций */
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+
+  /* --- СОСТОЯНИЕ OFF (Мягкий пастельный красный) --- */
+  background-color: #fee2e2;
+  color: #ef4444;
+}
+
+/* Ховер-эффект для состояния OFF */
+.toggle-btn:hover {
+  background-color: #fecaca;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+}
+
+/* --- СОСТОЯНИЕ ON (Мягкий пастельный зеленый при .active) --- */
+.toggle-btn.active {
+  background-color: #d1fae5;
+  color: #10b981;
+}
+
+/* Ховер-эффект для состояния ON */
+.toggle-btn.active:hover {
+  background-color: #a7f3d0;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+}
+
+/* Эффект «физического» нажатия при клике */
+.toggle-btn:active {
+  transform: scale(0.97);
+}
+
+/* Стили фокуса для доступности (когда переключают с клавиатуры) */
+.toggle-btn:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
