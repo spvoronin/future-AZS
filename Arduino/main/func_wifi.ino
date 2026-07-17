@@ -1,3 +1,6 @@
+extern unsigned long camResponseTimer;  //указание того, что эти переменные находятся в другом файле
+extern bool hasCamResponse;
+
 void setup_wifi() {
   delay(10);
   Serial.println();
@@ -92,13 +95,15 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
   if (String(topic) == "BV/SAF/cam/response") {
     String cleanMessage = convertPlateToLatin(message);
-    // Устанавливаем цвета: черный текст на белом фоне (чтобы затирать старые буквы)
     tft.setTextColor(ST77XX_BLACK, ST77XX_WHITE);
     tft.setTextSize(2);
 
-    tft.setCursor(67, x_start + shift * 7);  //
+    tft.setCursor(67, x_start + shift * 7);
     tft.print(cleanMessage);
 
     tft.print("        ");
+
+    camResponseTimer = millis(); // Запоминаем текущую миллисекунду
+    hasCamResponse = true;       // Сигнализируем, что номер на экране
   }
 }

@@ -72,7 +72,7 @@ void updateDynamicData() {
   tft.print(currentData.airHumidity, 1);
   tft.print("%   ");
 
-  // Вывод температуры топлива с будущей термопары (напротив "Fuel Temp:")
+  // Вывод температуры топлива с термопары (напротив "Fuel Temp:")
   tft.setCursor(y_data, x_start + (shift * 2));
   tft.print(currentData.fuelTemp, 1);
   tft.print("C  ");

@@ -29,6 +29,10 @@ const int y_start = 10;         //начало надписей
 const unsigned long DISPLAY_INTERVAL = 1000;  // вывод на экран, опрос датчиков
 const unsigned long MQTT_INTERVAL = 5000;     // отправка на сервер
 
+// === сколько времени номер будет отображаться на экране
+// 1 минута = 60000 мс | 3 минуты = 180000 мс | 5 минут = 300000 мс
+#define CAM_RESPONSE_TIMEOUT 180000
+
 // === СТРУКТУРА И ДАТЧИКИ ===
 struct SensorData {
   float airTemp = 0.0;
