@@ -105,28 +105,30 @@ ambient_humidity real not null, -- влажность среды с DHT11
 ambient_temperature real not null, -- температура среды с DHT11
 tank_temperature real not null, -- температура в цистерне
 water_level int not null, -- уровень воды
+voltage real not null, -- датчик напряжения
 time timestamp default current_timestamp, -- время пинга
 constraint fk_uuid foreign key (uuid) references uuid(uuid) on delete cascade
 );
 
 create table cam
 (
-cam_id serial primary key,
-uuid text not null UNIQUE
+cam_id serial primary key, -- номер камеры в бд
+uuid text not null UNIQUE -- уникальный айди камеры
 );
 
 create table images
 (
-image_id serial primary key,
-image_time timestamp default current_timestamp,
-image_data BYTEA not null,
-cam_id int not null,
+image_id serial primary key, -- айди изображения
+image_time timestamp default current_timestamp, -- время записи изображения
+image_data BYTEA not null, -- изображение в байтовом виде
+cam_id int not null, -- уникальный айди камеры
 constraint key_cam_id foreign key(cam_id) references cam(cam_id)
 );
 
 create table number_of_car
 (
-id serial primary key,
-image_id int not null UNIQUE,
-number_car varchar(20) not null UNIQUE
+id serial primary key, -- айди номера
+image_id int not null UNIQUE, -- айди изображения, где находится этот номер
+number_car varchar(20) not null UNIQUE -- сам номер автомобиля
+constraint key_img_id foreign key(image_id) references images(image_id)
 )
