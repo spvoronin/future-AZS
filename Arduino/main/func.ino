@@ -42,7 +42,7 @@ void readSensors() {
     currentData.voltage_V = 0.0;
   }
   //фильтр холостого хода
-  else if (currentData.current_mA < 0.2 && currentData.current_mA > -1.0) {
+  else if (currentData.current_mA < 0.1 && currentData.current_mA > -1.0) {
     currentData.current_mA = 0.0;
   }
 

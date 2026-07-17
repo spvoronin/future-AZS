@@ -46,8 +46,8 @@ void sendTelemetryMQTT(String time_timestamp) {
   doc["key"] = "info_about_sensor_SAF";
   doc["uuid"] = SECRET_DEVICE_UUID;
   doc["timestamp"] = time_timestamp;
-  doc["electric_current"] = currentData.current_mA;
-  doc["voltage"] = currentData.voltage_V;
+  doc["electric_current"] = round(currentData.current_mA * 100.0) / 100.0;
+  doc["voltage"] = round(currentData.voltage_V * 100.0) / 100.0;
   doc["flame"] = currentData.flame;
   doc["gas"] = currentData.gaz;
   doc["ambient_humidity"] = currentData.airHumidity;
