@@ -91,13 +91,14 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
 
   if (String(topic) == "BV/SAF/cam/response") {
+    String cleanMessage = convertPlateToLatin(message);
     // Устанавливаем цвета: черный текст на белом фоне (чтобы затирать старые буквы)
     tft.setTextColor(ST77XX_BLACK, ST77XX_WHITE);
     tft.setTextSize(2);
-    
-    tft.setCursor(y_start, x_start + shift * 7); // 
-    tft.print(message);
 
-    tft.print("        "); 
+    tft.setCursor(67, x_start + shift * 7);  //
+    tft.print(cleanMessage);
+
+    tft.print("        ");
   }
 }

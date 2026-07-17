@@ -38,6 +38,9 @@ void readSensors() {
   //}
 
   currentData.gaz = getGasPPM();
+  if (currentData.gaz > 9999) {
+    currentData.gaz = 0;
+  }
 
 //zummer
   if (millis() > 60000) { 
@@ -97,7 +100,7 @@ void updateDynamicData() {
   tft.setCursor(y_data, x_start + (shift * 6));
   //int gaz_tft = map(currentData.gaz, 0, 4095, 0, 100);
   tft.print(currentData.gaz);
-  tft.print("ppm ");
+  tft.print("ppm   ");
 }
 
 float getGasPPM() {
@@ -123,4 +126,65 @@ float getGasPPM() {
   float ppm = MQ2_A_COEFF * pow(ratio, MQ2_B_COEFF);
   
   return ppm;
+}
+
+String convertPlateToLatin(String input) {
+  String result = "";
+  
+  for (size_t i = 0; i < input.length(); i++) {
+    unsigned char c = input[i];
+    
+    // Русские буквы в UTF-8 кодируются двумя байтами. Первый байт всегда 0xD0 или 0xD1.
+    if (c == 0xD0 && i + 1 < input.length()) {
+      unsigned char next = input[i + 1];
+      i++; // Пропускаем второй байт, так как мы его сейчас обработаем
+      
+      switch (next) {
+        // ЗАГЛАВНЫЕ РУССКИЕ БУКВЫ -> ЛАТИНСКИЕ ОРИГИНАЛЫ
+        case 0x90: result += 'A'; break; // А
+        case 0x92: result += 'B'; break; // В
+        case 0x95: result += 'E'; break; // Е
+        case 0x9A: result += 'K'; break; // К
+        case 0x9C: result += 'M'; break; // М
+        case 0x9D: result += 'H'; break; // Н
+        case 0x9E: result += 'O'; break; // О
+        case 0xA0: result += 'P'; break; // Р
+        case 0xA1: result += 'C'; break; // С
+        case 0xA2: result += 'T'; break; // Т
+        case 0xA3: result += 'Y'; break; // У
+        case 0xA5: result += 'X'; break; // Х
+        
+        // Строчные русские буквы (на случай, если пришлют маленькими)
+        case 0xB0: result += 'A'; break; // а
+        case 0xB2: result += 'B'; break; // в
+        case 0xB5: result += 'E'; break; // е
+        case 0xBA: result += 'K'; break; // к
+        case 0xBC: result += 'M'; break; // м
+        case 0xBD: result += 'H'; break; // н
+        case 0xBE: result += 'O'; break; // о
+        
+        default:   result += '?'; break; // Если прилетела русская буква, которой нет в номерах (например, Б, Г, Д)
+      }
+    } 
+    else if (c == 0xD1 && i + 1 < input.length()) {
+      unsigned char next = input[i + 1];
+      i++; // Пропускаем второй байт
+      
+      switch (next) {
+        // Строчные буквы из диапазона 0xD1
+        case 0x80: result += 'P'; break; // р
+        case 0x81: result += 'C'; break; // с
+        case 0x82: result += 'T'; break; // т
+        case 0x83: result += 'Y'; break; // у
+        case 0x85: result += 'X'; break; // х
+        
+        default:   result += '?'; break;
+      }
+    }
+    else {
+      // Все остальные символы (цифры, пробелы, дефисы и английские буквы) оставляем без изменений
+      result += (char)c;
+    }
+  }
+  return result;
 }
