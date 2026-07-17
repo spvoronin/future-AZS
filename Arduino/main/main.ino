@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <Adafruit_GFX.h>     // Базовая графическая библиотека
+#include <Adafruit_GFX.h>
 #include <Adafruit_ST7789.h>
 #include <SPI.h>
 #include <DHT.h>
@@ -47,6 +47,10 @@ unsigned long lastMQTTUpdate = 0;
 bool lastButtonState = HIGH;
 unsigned long lastDebounceTime = 0;
 const unsigned long DEBOUNCE_DELAY = 300;
+
+//для вывода номера
+unsigned long camResponseTimer = 0;       // Время, когда прилетел номер
+bool hasCamResponse = false;              //есть ли номер на экране
 
 void setup() {
   Serial.begin(115200);
@@ -124,4 +128,12 @@ void loop() {
     }
   }
   lastButtonState = currentButtonState;
+
+  if (hasCamResponse && (millis() - camResponseTimer >= CAM_RESPONSE_TIMEOUT)) {
+    int y_coord = x_start + shift * 7;
+
+    tft.fillRect(0, y_coord, 240, 18, ST77XX_WHITE);
+    
+    hasCamResponse = false; // Сбрасываем флаг, чтобы больше не стирать пустоту
+  }
 }
