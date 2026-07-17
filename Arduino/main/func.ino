@@ -43,12 +43,8 @@ void readSensors() {
   }
 
   //zummer
-  if (millis() > 60000) {
-    if (currentData.gaz > 600) {
-      tone(ZUM_PIN, 1000);
-    } else {
-      noTone(ZUM_PIN);
-    }
+  if (currentData.flame || (millis() > 60000 && currentData.gaz > 600)) {
+    tone(ZUM_PIN, 1000);
   } else {
     noTone(ZUM_PIN);
   }
