@@ -1,12 +1,17 @@
 import { useEffect, useState } from 'react';
 import { Api } from '../api/api';
+import { useAuth } from '../context/AuthContext';
 
 export default function Sensors() {
+    const { user } = useAuth();
   const [sensorData, setSensorData] = useState(null);
   const [error, setError] = useState('');
   const [releStatus, setReleStatus] = useState(false)
 
+  const isAuthorized = !!user?.token;
+
   const fetchSensors = async () => {
+      if (!isAuthorized) return;
     try {
       const data = await Api.getSensors();
       if (data.status === 'error') {
@@ -34,11 +39,32 @@ export default function Sensors() {
   };
 
   useEffect(() => {
-    fetchSensors();
-    // Обновляем данные каждые 5 секунд
-    const interval = setInterval(fetchSensors, 5000);
-    return () => clearInterval(interval);
-  }, []);
+    if (isAuthorized) {
+        fetchSensors();
+        // Обновляем данные каждые 5 секунд
+        const interval = setInterval(fetchSensors, 5000);
+        return () => clearInterval(interval);
+    }
+  }, [isAuthorized]);
+
+const handleOpenLoginModal = () => {
+    window.dispatchEvent(new Event('open-login-modal'));
+  };
+
+if (!isAuthorized) {
+    return (
+      <div className="card lock-card">
+        <h3 className="lock-title">🔒 Доступ ограничен</h3>
+        <p className="lock-desc">Пожалуйста, войдите в свой аккаунт для просмотра датчиков и управления системой.</p>
+        <button
+          className="toggle-btn active"
+          onClick={handleOpenLoginModal} // Или твой роутинг, например navigate('/login')
+        >
+          Перейти к входу
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="card">

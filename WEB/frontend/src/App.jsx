@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Api } from './api/api';
@@ -38,7 +38,6 @@ function LoginModal({ isOpen, onClose }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-
   if (!isOpen) return null;
 
   const handleSubmit = async () => {
@@ -63,8 +62,9 @@ function LoginModal({ isOpen, onClose }) {
       } catch (e) {
         console.warn("Не удалось получить id пользователя", e);
       }
-
-      login({ ...res, id: userId, email });
+      const userData = { ...res, id: userId, email };
+      localStorage.setItem("azs_user", JSON.stringify(userData));
+      login(userData);
       onClose();
     } catch (err) {
       setError(err.message || 'Ошибка сети');
@@ -106,7 +106,11 @@ function LoginModal({ isOpen, onClose }) {
 function MainLayout() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [stationLabel, setStationLabel] = useState('Загрузка станции...');
-
+  useEffect(() => {
+    const handleOpen = () => setIsLoginOpen(true);
+    window.addEventListener('open-login-modal', handleOpen);
+    return () => window.removeEventListener('open-login-modal', handleOpen);
+  }, []);
   return (
     <div className="app">
       <Sidebar />
