@@ -5,7 +5,7 @@
 #define TFT_CS 5
 #define TFT_RST 4
 #define TFT_DC 2
-#define TFT_BL 21
+#define TFT_BL 15
 #define DHT_PIN 14
 #define FUEL_PIN 34     // Аналоговый пин для уровня топлива (ADC1)
 #define CURRENT_PIN 35  // Аналоговый пин для датчика тока ACS712 (ADC1)
@@ -43,6 +43,7 @@ struct SensorData {
   bool flame = false;
   int gaz = 0;
   bool relay = false;
+  float voltage_V = 0.0;
 };
 
 const int h_calb = 0;  //разница для калибровки влажности DHT11

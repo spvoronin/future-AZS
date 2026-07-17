@@ -3,12 +3,13 @@
 #include <Adafruit_ST7789.h>
 #include <SPI.h>
 #include <DHT.h>
-#include <ACS712.h>
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
+#include <Adafruit_INA219.h>
+#include <Wire.h>
 
 //подгрузка внутренних файлов
 #include "config.h"
@@ -28,7 +29,7 @@ const char* mqtt_topic_pub = SECRET_TOPIC_PUB;
 //создание объектов
 Adafruit_ST7789 tft = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
 DHT dht(DHT_PIN, DHT11);
-ACS712 acs(CURRENT_PIN, 3.3, 4095, 185);
+Adafruit_INA219 ina219;
 
 OneWire oneWire(DS18B20_PIN);          // Настраиваем шину 1-Wire на нашем пине
 DallasTemperature dsSensors(&oneWire);
@@ -90,10 +91,16 @@ void setup() {
   tft.setCursor(y_start, x_start + (shift * 2)); tft.print("Fuel Temp:");
   tft.setCursor(y_start, x_start + shift * 3); tft.print("Fuel Level:");
   tft.setCursor(y_start, x_start + shift * 4); tft.print("Current:");
-  tft.setCursor(y_start, x_start + shift * 5); tft.print("Flame:");
-  tft.setCursor(y_start, x_start + shift * 6); tft.print("Gas:");
-
-  acs.autoMidPoint();
+  tft.setCursor(y_start, x_start + shift * 5); tft.print("Voltage:");
+  tft.setCursor(y_start, x_start + shift * 6); tft.print("Flame:");
+  tft.setCursor(y_start, x_start + shift * 7); tft.print("Gas:");
+  
+  if (!ina219.begin()) {
+    Serial.println("Не удалось найти чип INA219! Проверь подключение.");
+    // Здесь можно вывести ошибку на TFT, если хочется
+  } else {
+    Serial.println("INA219 успешно инициализирован.");
+  }
 }
 
 void loop() {
@@ -130,7 +137,7 @@ void loop() {
   lastButtonState = currentButtonState;
 
   if (hasCamResponse && (millis() - camResponseTimer >= CAM_RESPONSE_TIMEOUT)) {
-    int y_coord = x_start + shift * 7;
+    int y_coord = x_start + shift * 8;
 
     tft.fillRect(0, y_coord, 240, 18, ST77XX_WHITE);
     

@@ -30,13 +30,26 @@ void readSensors() {
   currentData.fuelLevel = map(rawFuel, 0, 4095, 0, 100);
   currentData.fuelLevel = constrain(currentData.fuelLevel, 0, 100);  //ограничитель
 
-  // 4. Чтение датчика тока ACS712
-  //currentData.current_mA = acs.mA_DC();
-  //Программный шумодав : если показания прыгают в пределах ±10 мА холостого хода, принудительно пишем 0
-  //if (abs(currentData.current_mA) < 150||abs(currentData.current_mA) < 0) {
-  //  currentData.current_mA = 0;
-  //}
+  //4. Ток и напряжение
+  float shuntVoltage_mV = ina219.getShuntVoltage_mV();
+  float busVoltage_V = ina219.getBusVoltage_V();
 
+  currentData.voltage_V = busVoltage_V + (shuntVoltage_mV / 1000.0);
+  currentData.current_mA = ina219.getCurrent_mA();
+  //защита от NaN
+  if (isnan(currentData.current_mA)) {
+    currentData.current_mA = 0.0;
+    currentData.voltage_V = 0.0;
+  }
+  //фильтр холостого хода
+  else if (currentData.current_mA < 0.2 && currentData.current_mA > -1.0) {
+    currentData.current_mA = 0.0;
+  }
+
+  //Serial.print("Напряжение: "); Serial.print(currentData.voltage_V); Serial.println(" V");
+  //Serial.print("Ток: "); Serial.print(currentData.current_mA); Serial.println(" mA");
+
+  //фильтр помех на газ
   currentData.gaz = getGasPPM();
   if (currentData.gaz > 9999) {
     currentData.gaz = 0;
@@ -49,6 +62,7 @@ void readSensors() {
     noTone(ZUM_PIN);
   }
 
+  //датчик пламени
   int rawFlame = analogRead(FLAME_PIN);
   if (rawFlame < 1500) {
     currentData.flame = true;
@@ -82,14 +96,19 @@ void updateDynamicData() {
   tft.print(currentData.fuelLevel);
   tft.print("%   ");
 
-  // 5. Ток с ACS712
+  // 5. Ток
   tft.setCursor(y_data, x_start + (shift * 4));
   tft.print(currentData.current_mA, 1);
   tft.print("mA  ");
   //Serial.println(currentData.current_mA);
+  
+  //6. Напряжение
+  tft.setCursor(y_data, x_start + (shift * 5)); 
+  tft.print(currentData.voltage_V, 2);  // 2 знака после запятой
+  tft.print("V   ");
 
-  // 6. Пламя
-  tft.setCursor(y_data, x_start + (shift * 5));
+  // 7. Пламя
+  tft.setCursor(y_data, x_start + (shift * 6));
 
   if (currentData.flame) {
     tft.setTextColor(ST77XX_RED, ST77XX_WHITE);
@@ -99,9 +118,9 @@ void updateDynamicData() {
     tft.print("SAFE ");
   }
 
-  // 7. Газ
+  // 8. Газ
   tft.setTextColor(ST77XX_BLACK, ST77XX_WHITE);
-  tft.setCursor(y_data, x_start + (shift * 6));
+  tft.setCursor(y_data, x_start + (shift * 7));
   //int gaz_tft = map(currentData.gaz, 0, 4095, 0, 100);
   tft.print(currentData.gaz);
   tft.print("ppm   ");
