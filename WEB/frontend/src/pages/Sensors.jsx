@@ -101,7 +101,11 @@ if (!isAuthorized) {
               {sensorData.flame ? 'ОБНАРУЖЕНО' : 'Норма'}
             </span>
           </div>
-        </div>
+          <div className="info-row">
+              <span className="label">Напряжение</span>
+              <span className="value">{sensorData.voltage} V</span>
+         </div>
+    </div>
       )}
     <button className={`toggle-btn ${releStatus ? 'active' : ''}`} onClick={handleReleBtnClick}>
       {releStatus ? 'ON' : 'OFF'}
