@@ -1,8 +1,9 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 import psycopg2
 import os
 from dotenv import load_dotenv
 import paho.mqtt.client as mqtt
+from dependencies import verify_admin, get_current_user
 
 load_dotenv()
 
@@ -30,7 +31,7 @@ mqtt_client.connect(MQTT_ADDRESS, int(MQTT_PORT))
 mqtt_client.loop_start()
 
 @router_sensor.get("")
-async def get_vol_from_sensor():
+async def get_vol_from_sensor(user: dict = Depends(get_current_user)):
     connection = None
     try:
         connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
@@ -62,7 +63,7 @@ async def get_vol_from_sensor():
             print('info: коннект закрыт')
 
 @router_sensor.post("/pumps/{pumps_id}")
-async def vkl_pump(pumps_id : int):
+async def vkl_pump(pumps_id : int, admin_user: dict = Depends(verify_admin)):
     MQTT_topic = f"BV/SAF/{pumps_id}"
     result = mqtt_client.publish(MQTT_topic, "change")
     if result.rc == mqtt.MQTT_ERR_SUCCESS:

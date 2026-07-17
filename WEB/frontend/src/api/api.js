@@ -1,12 +1,27 @@
 const API_BASE = "https://api.smartaf.ru"; // Твой бэкенд FastAPI
 
 export const Api = {
-  async _request(method, path, body) {
+async _request(method, path, body) {
+    let token = null;
     const opts = { method, headers: {} };
+    const userData = localStorage.getItem("azs_user")
+    if (userData) {
+      try {
+        const parsed = JSON.parse(userData);
+        token = parsed.token;
+      } catch (e) {
+        console.error("Ошибка парсинга azs_user в API:", e);
+      }
+    }
+    if (token) {
+      opts.headers["Authorization"] = `Bearer ${token}`;
+    }
+
     if (body !== undefined) {
       opts.headers["Content-Type"] = "application/json";
       opts.body = JSON.stringify(body);
     }
+
     const res = await fetch(API_BASE + path, opts);
     let data = null;
     try {
@@ -14,7 +29,11 @@ export const Api = {
     } catch (e) {
       /* пустой ответ */
     }
+
     if (!res.ok) {
+      if (res.status === 401) {
+        localStorage.removeItem("azs_user");
+      }
       const message = (data && data.message) || `Ошибка запроса (${res.status})`;
       throw new Error(message);
     }
@@ -25,8 +44,12 @@ export const Api = {
   post(path, body) { return this._request("POST", path, body); },
 
   // --- Пользователи ---
-  login(email, password_hash) {
-    return this.post("/users/login", { email, password_hash });
+  async login(email, password_hash) {
+    const data = await this.post("/users/login", { email, password_hash });
+    if (data && data.token) {
+        localStorage.setItem("azs_user", JSON.stringify(data));
+    }
+    return data;
   },
   getAllUsers() {
     return this.get("/users");

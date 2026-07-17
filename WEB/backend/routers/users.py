@@ -3,6 +3,7 @@ import psycopg2
 import os
 from dotenv import load_dotenv
 from schemas.schem import UserCreate, UserLogin
+import jwt
 
 load_dotenv()
 
@@ -11,6 +12,8 @@ NAME_USER = os.getenv("NAME_USER")
 PASSWORD = os.getenv("PASSWORD")
 DATABASE = os.getenv("DATABASE")
 CONNECT = os.getenv("CONNECT")
+
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 router_users = APIRouter(
     prefix="/users",
@@ -121,12 +124,14 @@ async def login_user(data_for_login: UserLogin):
         connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
         connection.autocommit = True
         with connection.cursor() as cursor:
-            cursor.execute('select phone, first_name, number_of_car from users where email = %s and password_hash = %s',
+            cursor.execute('select phone, first_name, number_of_car, is_Admin from users where email = %s and password_hash = %s',
                            (data_for_login.email, data_for_login.password_hash))
             ans = cursor.fetchone()
             data_about_user = ans if ans else None
         if (data_about_user):
-            return {'phone': data_about_user[0], 'first_name': data_about_user[1], 'number_of_car' : data_about_user[
+            payload = {"sub": data_for_login.email, "role": "admin" if bool(data_about_user[3]) else "simple"}
+            token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
+            return {'token' : token,'phone': data_about_user[0], 'first_name': data_about_user[1], 'number_of_car' : data_about_user[
                 2], 'email' : data_for_login.email}
         else:
             return {'message' : 'Unauthorized', 'code' : 401}

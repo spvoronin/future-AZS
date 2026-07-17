@@ -21,7 +21,8 @@ email varchar(100) unique, -- Почта для чеков и уведомлен
 password_hash varchar(255) not null, -- Хэш пароля
 first_name varchar(50), -- Имя клиента
 time timestamp default current_timestamp, -- время пинга
-number_of_car varchar(20) not null
+number_of_car varchar(20) not null,
+is_Admin boolean default False
 );
 
 create table pumps
