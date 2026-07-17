@@ -38,7 +38,7 @@ async def get_vol_from_sensor(user: dict = Depends(get_current_user)):
         connection.autocommit = True
         with connection.cursor() as cursor:
             cursor.execute(
-                'select uuid, electric_current, flame, gas, ambient_humidity, ambient_temperature, tank_temperature, water_level from sensors where uuid=%s order by id desc limit 1',
+                'select uuid, electric_current, flame, gas, ambient_humidity, ambient_temperature, tank_temperature, water_level, voltage from sensors where uuid=%s order by id desc limit 1',
                 (UUID,))
             data_about_sensors = cursor.fetchone()
             if data_about_sensors is None:
@@ -51,7 +51,8 @@ async def get_vol_from_sensor(user: dict = Depends(get_current_user)):
                 "ambient_humidity": data_about_sensors[4],
                 "ambient_temperature": data_about_sensors[5],
                 "tank_temperature": data_about_sensors[6],
-                "water_level": data_about_sensors[7]
+                "water_level": data_about_sensors[7],
+                "voltage" : data_about_sensors[8]
             }
         return data_res
     except Exception as e:
