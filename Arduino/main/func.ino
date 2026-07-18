@@ -2,6 +2,7 @@
 #define R0_CLEAN_AIR 10000.0  // Сопротивление датчика в чистом воздухе (примерно 10 кОм = 10000 Ом)
 #define MQ2_A_COEFF 574.25    // Коэффициент 'a' из даташита для сжиженного газа (LPG)
 #define MQ2_B_COEFF -2.222    // Коэффициент 'b' из даташита для сжиженного газа (LPG)
+extern bool ina219_connected;
 
 void readSensors() {
   //DHT11
@@ -31,18 +32,32 @@ void readSensors() {
   currentData.fuelLevel = constrain(currentData.fuelLevel, 0, 100);  //ограничитель
 
   //4. Ток и напряжение
-  float shuntVoltage_mV = ina219.getShuntVoltage_mV();
-  float busVoltage_V = ina219.getBusVoltage_V();
+  if (ina219_connected) {
+    Wire.beginTransmission(0x40);
+    if (Wire.endTransmission() == 0) {
 
-  currentData.voltage_V = busVoltage_V + (shuntVoltage_mV / 1000.0);
-  currentData.current_mA = ina219.getCurrent_mA();
-  //защита от NaN
-  if (isnan(currentData.current_mA)) {
-    currentData.current_mA = 0.0;
+      float shuntVoltage_mV = ina219.getShuntVoltage_mV();
+      float busVoltage_V = ina219.getBusVoltage_V();
+
+      currentData.voltage_V = busVoltage_V + (shuntVoltage_mV / 1000.0);
+      currentData.current_mA = ina219.getCurrent_mA();
+
+      // Наша защита от NaN и шумов холостого хода
+      if (isnan(currentData.current_mA)) currentData.current_mA = 0.0;
+      if (isnan(currentData.voltage_V)) currentData.voltage_V = 0.0;
+
+      if (currentData.current_mA < 0.1 && currentData.current_mA > -1.0) {
+        currentData.current_mA = 0.0;
+      }
+    } else {
+      Serial.println("КРИТ: INA219 отключился во время работы макета!");
+      ina219_connected = false;  // Вырубаем опрос навсегда до перезагрузки, спасая сеть!
+      currentData.voltage_V = 0.0;
+      currentData.current_mA = 0.0;
+    }
+  } else {
+    // Датчик отключен изначально или отвалился. Вообще не трогаем I2C!
     currentData.voltage_V = 0.0;
-  }
-  //фильтр холостого хода
-  else if (currentData.current_mA < 0.1 && currentData.current_mA > -1.0) {
     currentData.current_mA = 0.0;
   }
 
@@ -101,9 +116,9 @@ void updateDynamicData() {
   tft.print(currentData.current_mA, 1);
   tft.print("mA  ");
   //Serial.println(currentData.current_mA);
-  
+
   //6. Напряжение
-  tft.setCursor(y_data, x_start + (shift * 5)); 
+  tft.setCursor(y_data, x_start + (shift * 5));
   tft.print(currentData.voltage_V, 2);  // 2 знака после запятой
   tft.print("V   ");
 

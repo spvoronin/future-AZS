@@ -53,6 +53,9 @@ const unsigned long DEBOUNCE_DELAY = 300;
 unsigned long camResponseTimer = 0;       // Время, когда прилетел номер
 bool hasCamResponse = false;              //есть ли номер на экране
 
+
+bool ina219_connected = false;
+
 void setup() {
   Serial.begin(115200);
   dht.begin();
@@ -72,9 +75,13 @@ void setup() {
   test_send_time.timeSetting();
   client.setCallback(callback);
   client.setServer(SECRET_MQTT_SERVER, SECRET_MQTT_PORT);
-
-  analogWrite(TFT_BL, brightness);
+  client.setBufferSize(512);
   
+  analogWrite(TFT_BL, brightness);
+  Wire.begin();
+  
+  Wire.setTimeOut(50);
+
   tft.init(240, 320);           
   tft.setRotation(2); // Поворот экрана
   
@@ -95,11 +102,18 @@ void setup() {
   tft.setCursor(y_start, x_start + shift * 6); tft.print("Flame:");
   tft.setCursor(y_start, x_start + shift * 7); tft.print("Gas:");
   
-  if (!ina219.begin()) {
-    Serial.println("Не удалось найти чип INA219! Проверь подключение.");
-    // Здесь можно вывести ошибку на TFT, если хочется
+  Wire.beginTransmission(0x40);
+  if (Wire.endTransmission() == 0) {
+    if (ina219.begin()) {
+      ina219_connected = true;
+      Serial.println("INA219: Датчик найден и успешно запущен!");
+    } else {
+      Serial.println("INA219: Ошибка внутренней инициализации библиотеки.");
+      ina219_connected = false;
+    }
   } else {
-    Serial.println("INA219 успешно инициализирован.");
+    Serial.println("INA219: ДАТЧИК НЕ НАЙДЕН ПРИ СТАРТЕ! Работаем без него.");
+    ina219_connected = false;
   }
 }
 
