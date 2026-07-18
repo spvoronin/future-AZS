@@ -107,9 +107,11 @@ if (!isAuthorized) {
          </div>
     </div>
       )}
-    <button className={`toggle-btn ${releStatus ? 'active' : ''}`} onClick={handleReleBtnClick}>
-      {releStatus ? 'ON' : 'OFF'}
-    </button>
+    {user?.role === 'admin' && (
+      <button className={`toggle-btn ${releStatus ? 'active' : ''}`} onClick={handleReleBtnClick}>
+         {releStatus ? 'ON' : 'OFF'}
+      </button>
+)}
     </div>
   );
 }

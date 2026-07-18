@@ -129,9 +129,10 @@ async def login_user(data_for_login: UserLogin):
             ans = cursor.fetchone()
             data_about_user = ans if ans else None
         if (data_about_user):
-            payload = {"sub": data_for_login.email, "role": "admin" if bool(data_about_user[3]) else "simple"}
+            user_role = "admin" if bool(data_about_user[3]) else "simple"
+            payload = {"sub": data_for_login.email, "role": user_role}
             token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
-            return {'token' : token,'phone': data_about_user[0], 'first_name': data_about_user[1], 'number_of_car' : data_about_user[
+            return {'token' : token, "role": user_role, 'phone': data_about_user[0], 'first_name': data_about_user[1], 'number_of_car' : data_about_user[
                 2], 'email' : data_for_login.email}
         else:
             return {'message' : 'Unauthorized', 'code' : 401}
