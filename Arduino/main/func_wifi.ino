@@ -46,7 +46,8 @@ void sendTelemetryMQTT(String time_timestamp) {
   doc["key"] = "info_about_sensor_SAF";
   doc["uuid"] = SECRET_DEVICE_UUID;
   doc["timestamp"] = time_timestamp;
-  doc["electric_current"] = currentData.current_mA;
+  doc["electric_current"] = round(currentData.current_mA * 100.0) / 100.0;
+  doc["voltage"] = round(currentData.voltage_V * 100.0) / 100.0;
   doc["flame"] = currentData.flame;
   doc["gas"] = currentData.gaz;
   doc["ambient_humidity"] = currentData.airHumidity;
@@ -98,7 +99,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
     tft.setTextColor(ST77XX_BLACK, ST77XX_WHITE);
     tft.setTextSize(2);
 
-    tft.setCursor(67, x_start + shift * 7);
+    tft.setCursor(67, x_start + shift * 8);
     tft.print(cleanMessage);
 
     tft.print("        ");

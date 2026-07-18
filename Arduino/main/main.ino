@@ -3,12 +3,13 @@
 #include <Adafruit_ST7789.h>
 #include <SPI.h>
 #include <DHT.h>
-#include <ACS712.h>
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
+#include <Adafruit_INA219.h>
+#include <Wire.h>
 
 //подгрузка внутренних файлов
 #include "config.h"
@@ -28,7 +29,7 @@ const char* mqtt_topic_pub = SECRET_TOPIC_PUB;
 //создание объектов
 Adafruit_ST7789 tft = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
 DHT dht(DHT_PIN, DHT11);
-ACS712 acs(CURRENT_PIN, 3.3, 4095, 185);
+Adafruit_INA219 ina219;
 
 OneWire oneWire(DS18B20_PIN);          // Настраиваем шину 1-Wire на нашем пине
 DallasTemperature dsSensors(&oneWire);
@@ -52,6 +53,9 @@ const unsigned long DEBOUNCE_DELAY = 300;
 unsigned long camResponseTimer = 0;       // Время, когда прилетел номер
 bool hasCamResponse = false;              //есть ли номер на экране
 
+
+bool ina219_connected = false;
+
 void setup() {
   Serial.begin(115200);
   dht.begin();
@@ -71,9 +75,13 @@ void setup() {
   test_send_time.timeSetting();
   client.setCallback(callback);
   client.setServer(SECRET_MQTT_SERVER, SECRET_MQTT_PORT);
-
-  analogWrite(TFT_BL, brightness);
+  client.setBufferSize(512);
   
+  analogWrite(TFT_BL, brightness);
+  Wire.begin();
+  
+  Wire.setTimeOut(50);
+
   tft.init(240, 320);           
   tft.setRotation(2); // Поворот экрана
   
@@ -90,10 +98,23 @@ void setup() {
   tft.setCursor(y_start, x_start + (shift * 2)); tft.print("Fuel Temp:");
   tft.setCursor(y_start, x_start + shift * 3); tft.print("Fuel Level:");
   tft.setCursor(y_start, x_start + shift * 4); tft.print("Current:");
-  tft.setCursor(y_start, x_start + shift * 5); tft.print("Flame:");
-  tft.setCursor(y_start, x_start + shift * 6); tft.print("Gas:");
-
-  acs.autoMidPoint();
+  tft.setCursor(y_start, x_start + shift * 5); tft.print("Voltage:");
+  tft.setCursor(y_start, x_start + shift * 6); tft.print("Flame:");
+  tft.setCursor(y_start, x_start + shift * 7); tft.print("Gas:");
+  
+  Wire.beginTransmission(0x40);
+  if (Wire.endTransmission() == 0) {
+    if (ina219.begin()) {
+      ina219_connected = true;
+      Serial.println("INA219: Датчик найден и успешно запущен!");
+    } else {
+      Serial.println("INA219: Ошибка внутренней инициализации библиотеки.");
+      ina219_connected = false;
+    }
+  } else {
+    Serial.println("INA219: ДАТЧИК НЕ НАЙДЕН ПРИ СТАРТЕ! Работаем без него.");
+    ina219_connected = false;
+  }
 }
 
 void loop() {
@@ -130,7 +151,7 @@ void loop() {
   lastButtonState = currentButtonState;
 
   if (hasCamResponse && (millis() - camResponseTimer >= CAM_RESPONSE_TIMEOUT)) {
-    int y_coord = x_start + shift * 7;
+    int y_coord = x_start + shift * 8;
 
     tft.fillRect(0, y_coord, 240, 18, ST77XX_WHITE);
     
