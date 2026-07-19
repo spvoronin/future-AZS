@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, status
 import psycopg2
 import os
 from dotenv import load_dotenv
@@ -34,7 +34,10 @@ async def get_all_stations():
         return data_res
     except Exception as e:
         print(f'info: ошибка {e}')
-        return {"status": "error", "message": "Не удалось получить список станций"}
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Не удалось получить список станций"
+        )
     finally:
         if connection:
             connection.close()
@@ -53,20 +56,28 @@ async def get_one_station(station_id: int):
                 (str(station_id),))
             data_one_station = cursor.fetchone()
             if data_one_station is None:
-                return {"status": "error", "message": "Станция не найдена"}
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Станция не найдена"
+                )
         data_res = {"id": data_one_station[0], "region": data_one_station[1], "adress": data_one_station[2],
                     "rating": data_one_station[3]}
         return data_res
+    except HTTPException:
+        raise
     except Exception as e:
         print(f'info: ошибка {e}')
-        return {"status": "error", "message": "Ошибка сервера при поиске станции"}
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Ошибка сервера при поиске станции"
+        )
     finally:
         if connection:
             connection.close()
             print('info: коннект закрыт')
 
 
-@router_stations.post("")
+@router_stations.post("", status_code=status.HTTP_201_CREATED)
 async def add_new_station(data_about_new_station: StationCreate):
     connection = None
     try:
@@ -89,43 +100,52 @@ async def add_new_station(data_about_new_station: StationCreate):
                 "address": data_about_new_station.adress, "rating": data_about_new_station.rating}
     except Exception as e:
         print(f'info: ошибка {e}')
-        return {"status": "error", "message": "Не удалось создать станцию"}
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Не удалось создать станцию"
+        )
     finally:
         if connection:
             connection.close()
             print('info: коннект закрыт')
 
 
-@router_stations.put("/{station_id}")
+@router_stations.put("/{station_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def update_data_about_station(station_id: int = 0, region: str | None = None, adress: str | None = None):
     connection = None
     try:
         connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
         connection.autocommit = True
         with connection.cursor() as cursor:
+            cursor.execute("SELECT id FROM station WHERE id=%s", (station_id,))
+            if not cursor.fetchone():
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Станция не найдена")
             if region:
                 cursor.execute('select id from region where region_name=%s', (region,))
                 res = cursor.fetchone()
-                if res:
-                    region_id = res[0]
-                else:
-                    cursor.execute('insert into region(region_name) values (%s) RETURNING id',
-                                   (region,))
+                region_id = res[0] if res else None
+                if not region_id:
+                    cursor.execute('INSERT INTO region(region_name) VALUES (%s) RETURNING id', (region,))
                     region_id = cursor.fetchone()[0]
-                cursor.execute("update station set region_id=%s where id=%s", (region_id, str(station_id)))
+                cursor.execute("update station set region_id=%s where id=%s", (region_id, station_id))
             if adress:
-                cursor.execute("update station set adress=%s where id=%s", (adress, str(station_id)))
-        return {"status": "ok", "code": 200}
+                cursor.execute("update station set adress=%s where id=%s", (adress, station_id))
+        return None
+    except HTTPException:
+        raise
     except Exception as e:
         print(f'info: ошибка {e}')
-        return {"status": "error", "message": "Не удалось обновить данные станции"}
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Не удалось обновить данные станции"
+        )
     finally:
         if connection:
             connection.close()
             print('info: коннект закрыт')
 
 
-@router_stations.delete("/{station_id}")
+@router_stations.delete("/{station_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_station(station_id: int):
     connection = None
     try:
@@ -133,10 +153,20 @@ async def delete_station(station_id: int):
         connection.autocommit = True
         with connection.cursor() as cursor:
             cursor.execute("delete from station where id=%s", (str(station_id),))
-        return {"status": "ok", "code": 204}
+            if cursor.rowcount == 0:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Станция не найдена"
+                )
+        return None
+    except HTTPException:
+        raise
     except Exception as e:
         print(f'info: ошибка {e}')
-        return {"status": "error", "message": "Не удалось удалить станцию"}
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Не удалось удалить станцию"
+        )
     finally:
         if connection:
             connection.close()
@@ -159,7 +189,10 @@ async def data_about_pumps_on_stations(station_id: int):
         return data_res
     except Exception as e:
         print(f'info: ошибка {e}')
-        return {"status": "error", "message": "Не удалось получить колонки"}
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Не удалось получить колонки"
+        )
     finally:
         if connection:
             connection.close()

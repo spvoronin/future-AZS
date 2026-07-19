@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, status
 import psycopg2
 import os
 from dotenv import load_dotenv
@@ -37,7 +37,10 @@ async def get_all_users():
         return data_res
     except Exception as e:
         print(f'info: ошибка {e}')
-        return {"status": "error", "message": "Ошибка сервера при поиске пользователей"}
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Ошибка сервера"
+        )
     finally:
         if connection:
             connection.close()
@@ -54,13 +57,21 @@ async def get_one_user(user_id: int):
             cursor.execute('select id, phone, email, first_name, number_of_car from users where id=%s', (str(user_id),))
             data_one_user = cursor.fetchone()
             if data_one_user is None:
-                return {"status": "error", "message": "Пользователь не найден"}
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Пользователь не найден"
+                )
         data_res = {"id": data_one_user[0], "phone": data_one_user[1], "email": data_one_user[2],
                     "first_name": data_one_user[3], "number_of_car": data_one_user[4]}
         return data_res
+    except HTTPException:
+        raise
     except Exception as e:
         print(f'info: ошибка {e}')
-        return {"status": "error", "message": "Ошибка сервера при поиске пользователя"}
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Ошибка сервера"
+        )
     finally:
         if connection:
             connection.close()
@@ -84,14 +95,14 @@ async def add_new_user(data_about_new_user: UserCreate):
                 "number_of_car": data_about_new_user.number_of_car}
     except Exception as e:
         print(f'info: ошибка {e}')
-        return {"status": "error", "message": "Ошибка сервера при создании пользователя"}
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Ошибка при создании пользователя")
     finally:
         if connection:
             connection.close()
             print('info: коннект закрыт')
 
 
-@router_users.put("/{user_id}")
+@router_users.put("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def update_data_about_user(user_id: int = 0, phone: str | None = None, email: str | None = None,
                                  first_name: str | None = None, number_of_car: str | None = None):
     connection = None
@@ -99,18 +110,29 @@ async def update_data_about_user(user_id: int = 0, phone: str | None = None, ema
         connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
         connection.autocommit = True
         with connection.cursor() as cursor:
-            if phone:
-                cursor.execute("update users set phone=%s where id=%s", (phone, str(user_id)))
-            if email:
-                cursor.execute("update users set email=%s where id=%s", (email, str(user_id)))
-            if first_name:
-                cursor.execute("update users set first_name=%s where id=%s", (first_name, str(user_id)))
-            if number_of_car:
-                cursor.execute("update users set number_of_car=%s where id=%s", (number_of_car, str(user_id)))
-        return {"status": "ok", "code": 204}
+            fields, values = [], []
+            if phone: fields.append("phone=%s"); values.append(phone)
+            if email: fields.append("email=%s"); values.append(email)
+            if first_name: fields.append("first_name=%s"); values.append(first_name)
+            if number_of_car: fields.append("number_of_car=%s"); values.append(number_of_car)
+
+            if not fields: return None
+            query = f"UPDATE users SET {', '.join(fields)} WHERE id=%s"
+            cursor.execute(query, tuple(values))
+            if cursor.rowcount == 0:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Пользователь не найден"
+                )
+            return None
+    except HTTPException:
+        raise
     except Exception as e:
         print(f'info: ошибка {e}')
-        return {"status": "error", "message": "Не удалось обновить данные пользователя"}
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Не удалось обновить данные"
+        )
     finally:
         if connection:
             connection.close()
@@ -135,10 +157,18 @@ async def login_user(data_for_login: UserLogin):
             return {'token' : token, "role": user_role, 'phone': data_about_user[0], 'first_name': data_about_user[1], 'number_of_car' : data_about_user[
                 2], 'email' : data_for_login.email}
         else:
-            return {'message' : 'Unauthorized', 'code' : 401}
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Неверный email или пароль"
+            )
+    except HTTPException:
+        raise
     except Exception as e:
         print(f'info: ошибка {e}')
-        return {"status": "error", "message": "Ошибка сервера при входе в аккаунт"}
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Ошибка сервера при входе"
+        )
     finally:
         if connection:
             connection.close()

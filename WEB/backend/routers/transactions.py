@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, status
 import psycopg2
 import os
 from dotenv import load_dotenv
@@ -36,11 +36,11 @@ async def create_transaction(data: TransactionCreate):
             pump_row = cursor.fetchone()
 
             if not pump_row:
-                return {"status": "error", "message": "Указанная ТРК не найдена"}
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Указанная ТРК не найдена")
             if not pump_row[0]:
-                return {"status": "error", "message": "ТРК временно отключена на обслуживание"}
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="ТРК временно отключена на обслуживание")
             if pump_row[1] != 'idle':
-                return {"status": "error", "message": "На этой ТРК прямо сейчас идет налив или произошел сбой"}
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="На этой ТРК прямо сейчас идет налив или произошел сбой")
 
             station_id = pump_row[2]
             region_id = pump_row[3]
@@ -51,7 +51,7 @@ async def create_transaction(data: TransactionCreate):
             ''', (region_id, data.fuel_type))
             price_row = cursor.fetchone()
             if not price_row:
-                return {"status": "error", "message": f"Топливо {data.fuel_type} не продается в данном регионе"}
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Топливо {data.fuel_type} не продается в данном регионе")
 
             price_per_liter = price_row[0]
 
@@ -64,7 +64,7 @@ async def create_transaction(data: TransactionCreate):
             tank_row = cursor.fetchone()
 
             if not tank_row:
-                return {"status": "error", "message": "На АЗС недостаточно топлива для вашего заказа"}
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="На АЗС недостаточно топлива для вашего заказа")
 
             tank_id = tank_row[0]
             current_tank_liters = tank_row[1]
@@ -92,12 +92,17 @@ async def create_transaction(data: TransactionCreate):
             "price_per_liter": price_per_liter,
             "total_cost_rub": total_cost
         }
-
+    except HTTPException:
+        if connection: connection.rollback()
+        raise
     except Exception as e:
         if connection:
             connection.rollback()
         print(f"info: ошибка транзакции {e}")
-        return {"status": "error", "message": "Ошибка сервера при формировании заказа"}
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Ошибка сервера при формировании заказа"
+        )
     finally:
         if connection:
             connection.close()

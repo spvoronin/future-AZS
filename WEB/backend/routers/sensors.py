@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 import psycopg2
 import os
 from dotenv import load_dotenv
@@ -42,7 +42,10 @@ async def get_vol_from_sensor(user: dict = Depends(get_current_user)):
                 (UUID,))
             data_about_sensors = cursor.fetchone()
             if data_about_sensors is None:
-                return {"status": "error", "message": "Данные не найдены"}
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Данные не найдены"
+                )
             data_res = {
                 "uuid": data_about_sensors[0],
                 "electric_current": data_about_sensors[1],
@@ -55,9 +58,14 @@ async def get_vol_from_sensor(user: dict = Depends(get_current_user)):
                 "voltage" : data_about_sensors[8]
             }
         return data_res
+    except HTTPException:
+        raise
     except Exception as e:
         print(f'info: ошибка {e}')
-        return {"status": "error", "message": "Не удалось получить данные с датчиков"}
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Не удалось получить данные с датчиков"
+        )
     finally:
         if connection:
             connection.close()
@@ -70,4 +78,7 @@ async def vkl_pump(pumps_id : int, admin_user: dict = Depends(verify_admin)):
     if result.rc == mqtt.MQTT_ERR_SUCCESS:
         return {"status": "ok", "message": f"Команда отправлена в {MQTT_topic}"}
     else:
-        return {"status": "error", "message": "Не удалось отправить"}
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Не удалось отправить команду на ТРК"
+        )

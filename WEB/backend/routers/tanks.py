@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, status
 import psycopg2
 import os
 from dotenv import load_dotenv
@@ -34,7 +34,10 @@ async def get_station_tanks(station_id: int):
 
             tanks_data = cursor.fetchall()
             if not tanks_data:
-                return {"status": "error", "message": "Цистерны для этой АЗС не найдены"}
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Цистерны для этой АЗС не найдены"
+                )
 
         for row in tanks_data:
             max_capacity = row[4]
@@ -51,9 +54,14 @@ async def get_station_tanks(station_id: int):
                 "temperature": row[6]
             })
         return data_res
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"info: ошибка {e}")
-        return {"status": "error", "message": "Не удалось получить данные резервуаров"}
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Не удалось получить данные резервуаров"
+        )
     finally:
         if connection:
             connection.close()
@@ -69,16 +77,19 @@ async def refill_tank(tank_id: int, data: float):
             cursor.execute("SELECT current_liters, max_capacity FROM tanks WHERE id = %s", (tank_id,))
             tank = cursor.fetchone()
             if not tank:
-                return {"status": "error", "message": "Цистерна не найдена"}
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Цистерна не найдена"
+                )
 
             current, max_cap = tank[0], tank[1]
             new_volume = current + data
 
             if new_volume > max_cap:
-                return {
-                    "status": "error",
-                    "message": f"Невозможно залить {data}л. В цистерне доступно только {max_cap - current}л."
-                }
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Невозможно залить {data}л. В цистерне доступно только {max_cap - current}л."
+                )
 
             cursor.execute(
                 "UPDATE tanks SET current_liters = %s WHERE id = %s",
@@ -90,20 +101,25 @@ async def refill_tank(tank_id: int, data: float):
             "message": f"Цистерна {tank_id} успешно пополнена",
             "current_liters": new_volume
         }
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"info: ошибка {e}")
-        return {"status": "error", "message": "Ошибка при обновлении данных цистерны"}
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Ошибка при обновлении данных цистерны"
+        )
     finally:
         if connection:
             connection.close()
 
-@router_tanks.post("")
+@router_tanks.post("", status_code=status.HTTP_201_CREATED)
 async def create_tank(data: TankCreate):
     if data.current_liters > data.max_capacity:
-        return {
-            "status": "error",
-            "message": f"Начальный объем ({data.current_liters}л) не может превышать макс. емкость ({data.max_capacity}л)"
-        }
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Объем не может превышать макс. емкость"
+        )
     connection = None
     try:
         connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
@@ -111,7 +127,10 @@ async def create_tank(data: TankCreate):
         with connection.cursor() as cursor:
             cursor.execute("SELECT id FROM station WHERE id = %s", (data.station_id,))
             if not cursor.fetchone():
-                return {"status": "error", "message": f"АЗС с id {data.station_id} не существует"}
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"АЗС с id {data.station_id} не существует"
+                )
 
             cursor.execute('''
                     INSERT INTO tanks (station_id, tank_number, compartment_number, fuel_type, max_capacity, current_liters, temperature)
@@ -134,9 +153,14 @@ async def create_tank(data: TankCreate):
             "message": f"Резервуар/отсек успешно создан",
             "tank_id": new_tank_id
         }
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"info: ошибка {e}")
-        return {"status": "error", "message": "Не удалось зарегистрировать цистерну"}
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Не удалось зарегистрировать цистерну"
+        )
     finally:
         if connection:
             connection.close()

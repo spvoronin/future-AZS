@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, status
 import psycopg2
 import os
 from dotenv import load_dotenv
@@ -36,20 +36,28 @@ async def get_prices_of_region(station_id: int, fuel_type: str | None = None):
                     (station_id,))
             data_about_prices = cursor.fetchall()
             if not data_about_prices:
-                return {"status": "error", "message": "Данные по ценам на топливо на АЗС не найдены"}
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Данные по ценам на топливо на АЗС не найдены"
+                )
         for records in data_about_prices:
             data_res.append({'fuel_type': records[0], 'prices_per_liter': records[1]})
         return data_res
+    except HTTPException:
+        raise
     except Exception as e:
         print(f'info: ошибка {e}')
-        return {"status": "error", "message": "Не удалось получить цены в данном регионе"}
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Внутренняя ошибка сервера: не удалось загрузить цены для данного региона"
+        )
     finally:
         if connection:
             connection.close()
             print('info: коннект закрыт')
 
 
-@router_prices.post("")
+@router_prices.post("", status_code=status.HTTP_201_CREATED)
 async def add_new_price(data_about_new_fuel: PricesCreate):
     connection = None
     try:
@@ -59,16 +67,24 @@ async def add_new_price(data_about_new_fuel: PricesCreate):
             cursor.execute('select id from region where region_name=%s', (data_about_new_fuel.region_name,))
             region_id = cursor.fetchone()
             if not region_id:
-                return {"status": "error", "message": "В этом регионе нет АЗС"}
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Регион '{data_about_new_fuel.region_name}' не найден"
+                )
             cursor.execute(
                 'insert into prices(region_id, fuel_type, price_per_liter) values (%s, %s, %s) ON CONFLICT (region_id, fuel_type) DO UPDATE SET price_per_liter = EXCLUDED.price_per_liter',
                 (region_id[0], data_about_new_fuel.fuel_type, data_about_new_fuel.price_per_liter))
             return {"status": "ok", "code": 201, "fuel_type": data_about_new_fuel.fuel_type,
                     "price_per_liter": data_about_new_fuel.price_per_liter,
                     "region_id": region_id[0]}
+    except HTTPException:
+        raise
     except Exception as e:
         print(f'info: ошибка {e}')
-        return {"status": "error", "message": "Не удалось обновить топливо"}
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Внутренняя ошибка сервера: не удалось обновить данные о топливе"
+        )
     finally:
         if connection:
             connection.close()
@@ -86,11 +102,19 @@ async def delete_fuel_price(region_id: int, fuel_type: str):
                 (str(region_id), fuel_type)
             )
             if cursor.rowcount == 0:
-                return {"status": "error", "message": f"Цена для топлива {fuel_type} в регионе {region_id} не найдена"}
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Цена для топлива {fuel_type} в регионе {region_id} не найдена"
+                )
         return {"status": "ok", "code": 200, "message": f"Топливо {fuel_type} удалено из региона {region_id}"}
+    except HTTPException:
+        raise
     except Exception as e:
         print(f'info: ошибка {e}')
-        return {"status": "error", "message": "Не удалось удалить цену на топливо"}
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Внутренняя ошибка сервера: не удалось удалить цену на топливо"
+        )
     finally:
         if connection:
             connection.close()
