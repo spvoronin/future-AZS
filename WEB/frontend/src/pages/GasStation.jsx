@@ -130,7 +130,7 @@ export default function GasStation({ setStationLabel }) {
             ) : (
               prices.map((p) => (
                 <div
-                  key={p.fuel_type}
+                  key={`price-${p.fuel_type}`}
                   className={`price-card ${selectedFuel === p.fuel_type ? 'selected' : ''}`}
                   onClick={() => setSelectedFuel(p.fuel_type)}
                 >
@@ -161,7 +161,7 @@ export default function GasStation({ setStationLabel }) {
 
                 return (
                   <div
-                    key={p.id}
+                    key={`pump-${p.pump_number}-${p.id}`}
                     className={cardClass}
                     onClick={() => isFree && setSelectedPump(p)}
                     style={{ cursor: isFree ? 'pointer' : 'not-allowed' }}
@@ -185,9 +185,9 @@ export default function GasStation({ setStationLabel }) {
       {/* Колонка 2: Услуги */}
       <div className="card">
         <h3>Услуги</h3>
-        <label className="service-item"><input type="checkbox" /> кофе</label>
-        <label className="service-item"><input type="checkbox" /> банкомат</label>
-        <label className="service-item"><input type="checkbox" /> выпечка</label>
+        <label className="service-item"><input type="checkbox" /> Антифриз</label>
+        <label className="service-item"><input type="checkbox" /> Банкомат</label>
+        <label className="service-item"><input type="checkbox" /> Стеклоомывающая жидкость</label>
         <div className="service-note">
           оплата картой или QR-кодом<br />
           лимит 25 литров для физлиц<br />
@@ -202,7 +202,7 @@ export default function GasStation({ setStationLabel }) {
         <div className="volume-row">
           {[10, 15, 20].map((vol) => (
             <button
-              key={vol}
+              key={`vol-${vol}`}
               className={`volume-btn ${selectedVolume === vol && !customVol ? 'selected' : ''}`}
               onClick={() => handleVolumeBtnClick(vol)}
             >
