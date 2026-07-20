@@ -181,11 +181,11 @@ async def data_about_pumps_on_stations(station_id: int):
         connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
         connection.autocommit = True
         with connection.cursor() as cursor:
-            cursor.execute('select pump_number, status, is_active from pumps where station_id=%s', (str(station_id),))
+            cursor.execute('select id, pump_number, status, is_active from pumps where station_id=%s', (str(station_id),))
             data_all_pumps_on_one_station = cursor.fetchall()
         for records in data_all_pumps_on_one_station:
             data_res.append(
-                {"id": station_id, "pump_number": records[0], "status": records[1], "is_active": records[2]})
+                {"id": records[0], "pump_number": records[1], "status": records[2], "is_active": records[3]})
         return data_res
     except Exception as e:
         print(f'info: ошибка {e}')
