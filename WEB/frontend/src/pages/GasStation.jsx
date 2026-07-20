@@ -39,7 +39,8 @@ export default function GasStation({ setStationLabel }) {
         // Загружаем колонки
         const pumpsData = await Api.getStationPumps(station.id);
         if (Array.isArray(pumpsData)) {
-          setPumps(pumpsData);
+          const sortedPumps = [...pumpsData].sort((a, b) => a.pump_number - b.pump_number);
+          setPumps(sortedPumps);
         }
       } catch (err) {
         console.error(err);
@@ -68,16 +69,15 @@ export default function GasStation({ setStationLabel }) {
   const currentPriceEntry = prices.find((p) => p.fuel_type === selectedFuel);
   const pricePerLiter = currentPriceEntry ? currentPriceEntry.prices_per_liter : 0;
   const totalCost = (pricePerLiter * selectedVolume).toFixed(2);
-
+  const selectedPumpObj = pumps.find(p => p.id === selectedPumpId);
   // Оформление заказа (Оплата)
   const handlePay = async () => {
     setPayError('');
-    const currentPump = pumps.find(p => p.id === selectedPumpId);
     if (!user) {
       setPayError('Сначала войдите в аккаунт через верхнюю панель');
       return;
     }
-    if (!currentPump) {
+    if (!selectedPumpId) {
       setPayError('Выберите свободную колонку (зеленую)');
       return;
     }
@@ -89,7 +89,7 @@ export default function GasStation({ setStationLabel }) {
     try {
       const payload = {
         user_id: user.id,
-        pump_id: currentPump.id,
+        pump_id: selectedPumpId,
         fuel_type: selectedFuel,
         requested_liters: selectedVolume
       };
@@ -100,7 +100,10 @@ export default function GasStation({ setStationLabel }) {
 
       // Перезагружаем колонки, чтобы отобразить новый статус (например, dispensing)
       const updatedPumps = await Api.getStationPumps(stationId);
-      if (Array.isArray(updatedPumps)) setPumps(updatedPumps);
+      if (Array.isArray(updatedPumps)) {
+        const sortedPumps = [...updatedPumps].sort((a, b) => a.pump_number - b.pump_number);
+        setPumps(sortedPumps);
+      }
       setSelectedPumpId(null); // сбрасываем текущий выбор
     } catch (err) {
       setPayError(err.message || 'Ошибка оформления заказа');
@@ -172,8 +175,7 @@ export default function GasStation({ setStationLabel }) {
           <div className="your-station-box">
             <div className="row">&#8592; Ваша АЗС</div>
             <div className="row">
-              {selectedPumpId
-                ? `Колонка ${pumps.find(p => p.id === selectedPumpId)?.pump_number} выбрана` : 'Колонка не выбрана'}
+              {selectedPumpObj ? `Колонка ${selectedPumpObj.pump_number} выбрана` : 'Колонка не выбрана'}
             </div>
           </div>
         </div>
