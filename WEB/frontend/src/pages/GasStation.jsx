@@ -10,7 +10,7 @@ export default function GasStation({ setStationLabel }) {
   const [prices, setPrices] = useState([]);
   const [pumps, setPumps] = useState([]);
   const [selectedFuel, setSelectedFuel] = useState(null);
-  const [selectedPump, setSelectedPump] = useState(null);
+  const [selectedPumpId, setSelectedPumpId] = useState(null);
   const [selectedVolume, setSelectedVolume] = useState(20);
   const [customVol, setCustomVol] = useState('');
   const [payError, setPayError] = useState('');
@@ -72,12 +72,12 @@ export default function GasStation({ setStationLabel }) {
   // Оформление заказа (Оплата)
   const handlePay = async () => {
     setPayError('');
-
+    const currentPump = pumps.find(p => p.id === selectedPumpId);
     if (!user) {
       setPayError('Сначала войдите в аккаунт через верхнюю панель');
       return;
     }
-    if (!selectedPump) {
+    if (!currentPump) {
       setPayError('Выберите свободную колонку (зеленую)');
       return;
     }
@@ -89,23 +89,19 @@ export default function GasStation({ setStationLabel }) {
     try {
       const payload = {
         user_id: user.id,
-        pump_id: selectedPump.id,
+        pump_id: currentPump.id,
         fuel_type: selectedFuel,
         requested_liters: selectedVolume
       };
 
       const res = await Api.createTransaction(payload);
-      if (res.status === "error") {
-        setPayError(res.message);
-        return;
-      }
 
       alert(`Заказ №${res.transaction_id} оформлен!\nК оплате: ${res.total_cost_rub} ₽\nНалив запущен.`);
 
       // Перезагружаем колонки, чтобы отобразить новый статус (например, dispensing)
       const updatedPumps = await Api.getStationPumps(stationId);
       if (Array.isArray(updatedPumps)) setPumps(updatedPumps);
-      setSelectedPump(null); // сбрасываем текущий выбор
+      setSelectedPumpId(null); // сбрасываем текущий выбор
     } catch (err) {
       setPayError(err.message || 'Ошибка оформления заказа');
     }
@@ -150,7 +146,7 @@ export default function GasStation({ setStationLabel }) {
             ) : (
               pumps.map((p) => {
                 const isFree = p.is_active && p.status === "idle";
-                const isSelected = selectedPump && selectedPump.id === p.id;
+                const isSelected = p.id === selectedPumpId;
 
                 // Рассчитываем класс стиля динамически
                 let cardClass = "pump-card ";
@@ -163,7 +159,7 @@ export default function GasStation({ setStationLabel }) {
                   <div
                     key={`pump-${p.pump_number}-${p.id}`}
                     className={cardClass}
-                    onClick={() => isFree && setSelectedPump(p)}
+                    onClick={() => isFree && setSelectedPumpId(p.id)}
                     style={{ cursor: isFree ? 'pointer' : 'not-allowed' }}
                   >
                     <div className="pump-title">Колонка {p.pump_number}</div>
@@ -176,7 +172,8 @@ export default function GasStation({ setStationLabel }) {
           <div className="your-station-box">
             <div className="row">&#8592; Ваша АЗС</div>
             <div className="row">
-              {selectedPump ? `Колонка ${selectedPump.pump_number} выбрана` : 'Колонка не выбрана'}
+              {selectedPumpId
+                ? `Колонка ${pumps.find(p => p.id === selectedPumpId)?.pump_number} выбрана` : 'Колонка не выбрана'}
             </div>
           </div>
         </div>
