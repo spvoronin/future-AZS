@@ -66,33 +66,68 @@ class photo_processing:
 
                 img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
-                gr = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-                num = self.num_cas.detectMultiScale(gr, scaleFactor=1.1, minNeighbors=5)
+                gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                gray = cv2.resize(gray, (0, 0), fx=1.5, fy=1.5, interpolation=cv2.INTER_CUBIC)
+                gray = cv2.convertScaleAbs(gray, alpha=1.3, beta=10)
 
-                for x, y, w, h in num:
-                    # Рисуем синюю рамку на оригинальной картинке вокруг найденного номера
-                    cv2.rectangle(img, (x, y), (x + w, y + h), (255, 0, 0), 2)
+                result = self.reader.readtext(gray)
+                print(f"DEBUG: Сырой результат со всей картинки: {result}")
 
-                    # Вырезаем область номера (ROI).
-                    # Вырезаем из ЦВЕТНОЙ оригинальной картинки, так как EasyOCR лучше распознает цвета.
-                    roi_plate = img[y:y + h, x:x + w]
-                    roi_plate = cv2.resize(roi_plate, (0, 0), fx=2.0, fy=2.0, interpolation=cv2.INTER_CUBIC)
-                    # Отправляем вырезанный кусочек номера в EasyOCR
-                    result = self.reader.readtext(roi_plate)
-                    if not result:
-                        continue
-                    raw_text = "".join([block[1] for block in result]).upper().replace(" ", "")
-                    car_number = re.sub(r'[^A-ZА-Я0-9]', '', raw_text)
-                    pattern = r'^[A-ZА-Я]\d{3}[A-ZА-Я]{2}\d{2,3}$'
-                    if re.match(pattern, car_number):
-                        cursor.execute(
-                            'insert into number_of_car(image_id, number_car) values (%s, %s)',
-                            (image_id, car_number)
-                        )
-                        return car_number.upper()
-                    # EasyOCR возвращает список. Для каждого найденного слова он выдает:
-                    # [координаты_границ, сам_текст, уверенность_в_распознавании]
-                    # Очищаем полученный текст от случайных пробелов
+                if not result:
+                    return "ФОРМАТ_НЕ_РАСПОЗНАН"
+
+                all_text = "".join([block[1] for block in result]).upper().replace(" ", "")
+                clean_text = re.sub(r'[^A-ZА-Я0-9]', '', all_text)
+                print(f"DEBUG: Сырой текст после очистки: '{clean_text}'")
+
+                translit_map = {
+                    'A': 'А', 'B': 'В', 'E': 'Е', 'K': 'К', 'M': 'М',
+                    'H': 'Н', 'O': 'О', 'P': 'Р', 'C': 'С', 'T': 'Т',
+                    'Y': 'У', 'X': 'Х', 'Z': '2'
+                }
+                normalized_text = "".join([translit_map.get(char, char) for char in clean_text])
+                print(f"DEBUG: Текст после нормализации: '{normalized_text}'")
+
+                # --- УМНОЕ ИСПРАВЛЕНИЕ ОШИБОК О/0 ПО ПОЗИЦИЯМ ГОСТА ---
+                # Если длина текста подходит под стандартный номер (например, 8-9 символов: буква+3 цифры+2 буквы+регион)
+                # Структура: [Буква] [3 символа] [2 Буквы] [Регион (2-3 цифры)]
+
+                fixed_text = normalized_text
+
+                # Попробуем выделить структуру с помощью регулярного выражения с группами,
+                # чтобы точечно исправить нули на О и наоборот.
+                # Шаблон захватывает: (1 буква)(3 знака)(2 буквы)(регион)
+                match_struct = re.match(r'^([A-ZА-Я0-9])([A-ZА-Я0-9]{3})([A-ZА-Я0-9]{2})(\d{2,3})$', fixed_text)
+
+                if match_struct:
+                    p1, p2, p3, region = match_struct.groups()
+
+                    # 1. Первая позиция ВСЕГДА буква: если там цифра (например, '0'), меняем на 'О'
+                    if p1 in '0123456789':
+                        p1 = 'О'  # Самая частая ошибка для О007ОО
+
+                    # 2. Вторая часть (3 символа) — это цифры. Если там пролезли буквы 'О', меняем их на '0'
+                    p2 = p2.replace('О', '0')
+
+                    # 3. Третья часть (2 символа) — это буквы. Если там нули '0', меняем их на 'О'
+                    p3 = p3.replace('0', 'О')
+
+                    fixed_text = f"{p1}{p2}{p3}{region}"
+                    print(f"DEBUG: Текст после структурного исправления О/0: '{fixed_text}'")
+
+                # Финальный паттерн для проверки ГОСТа
+                pattern = r'[А-ВЕКМНОРСТУХ]\d{3}[А-ВЕКМНОРСТУХ]{2}\d{2,3}'
+                match = re.search(pattern, fixed_text)
+
+                if match:
+                    valid_number = match.group(0)
+                    print(f"DEBUG: Успешно найден номер: {valid_number}")
+                    cursor.execute(
+                        'insert into number_of_car(image_id, number_car) values (%s, %s) ON CONFLICT (number_car) do update set image_id = EXCLUDED.image_id',
+                        (image_id, valid_number)
+                    )
+                    return valid_number.upper()
+
                 return "ФОРМАТ_НЕ_РАСПОЗНАН"
         except Exception as e:
             print(f"Ошибка: {e}")
