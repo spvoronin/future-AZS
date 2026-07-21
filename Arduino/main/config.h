@@ -10,7 +10,7 @@
 #define FUEL_PIN 34     // Аналоговый пин для уровня топлива (ADC1)
 #define CURRENT_PIN 35  // Аналоговый пин для датчика тока ACS712 (ADC1)
 #define FLAME_PIN 32
-#define GAZ_PIN 33
+#define GAZ_PIN 39
 #define RELAY_PIN 27
 #define DS18B20_PIN 26
 #define ZUM_PIN 25
