@@ -128,7 +128,7 @@ class photo_processing:
                     )
                     return valid_number.upper()
 
-                return "ФОРМАТ_НЕ_РАСПОЗНАН"
+                return "404_BAD_REQUEST"
         except Exception as e:
             print(f"Ошибка: {e}")
         finally:
