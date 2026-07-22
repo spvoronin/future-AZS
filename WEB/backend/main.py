@@ -11,8 +11,6 @@ from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from database import init_db, close_db
 
-load_dotenv()
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
