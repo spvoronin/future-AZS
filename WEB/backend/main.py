@@ -8,24 +8,16 @@ from routers.tanks import router_tanks
 from routers.transactions import router_transactions
 from routers.sensors import router_sensor
 from contextlib import asynccontextmanager
-import asyncpg
-import os
 from dotenv import load_dotenv
+from database import init_db, close_db
 
 load_dotenv()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    pool = await asyncpg.create_pool(
-        host=os.getenv("HOST"),
-        user=os.getenv("NAME_USER"),
-        password=os.getenv("PASSWORD"),
-        database=os.getenv("DATABASE"),
-    )
-
-    yield{"db_pool": pool}
-
-    await pool.close()
+    await init_db()
+    yield
+    await close_db()
 
 
 app = FastAPI(lifespan=lifespan)
