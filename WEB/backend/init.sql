@@ -129,6 +129,6 @@ create table number_of_car
 (
 id serial primary key, -- айди номера
 image_id int not null UNIQUE, -- айди изображения, где находится этот номер
-number_car varchar(20) not null UNIQUE -- сам номер автомобиля
+number_car varchar(20) not null UNIQUE, -- сам номер автомобиля
 constraint key_img_id foreign key(image_id) references images(image_id)
 )
