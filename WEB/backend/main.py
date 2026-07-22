@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from routers.pumps import router_pumps
 from routers.stations import router_stations
 from routers.users import router_users
@@ -6,9 +7,28 @@ from routers.prices import router_prices
 from routers.tanks import router_tanks
 from routers.transactions import router_transactions
 from routers.sensors import router_sensor
-from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
+import asyncpg
+import os
+from dotenv import load_dotenv
 
-app = FastAPI()
+load_dotenv()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    pool = await asyncpg.create_pool(
+        host=os.getenv("HOST"),
+        user=os.getenv("NAME_USER"),
+        password=os.getenv("PASSWORD"),
+        database=os.getenv("DATABASE"),
+    )
+
+    yield{"db_pool": pool}
+
+    await pool.close()
+
+
+app = FastAPI(lifespan=lifespan)
 
 origins = [
     "https://smartaf.ru",
