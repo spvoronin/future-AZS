@@ -8,14 +8,16 @@ from routers.tanks import router_tanks
 from routers.transactions import router_transactions
 from routers.sensors import router_sensor
 from contextlib import asynccontextmanager
-from dotenv import load_dotenv
 from database import init_db, close_db
+from mqtt_client import init_mqtt, stop_mqtt
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
+    init_mqtt()
     yield
     await close_db()
+    stop_mqtt()
 
 
 app = FastAPI(lifespan=lifespan)
