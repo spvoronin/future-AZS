@@ -55,7 +55,15 @@ export default function Profile() {
             Выйти из аккаунта
           </div>
         )}
-        <div className="settings-item">О приложении</div>
+        <a
+        href="https://github.com/spvoronin/future-AZS"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="settings-item"
+        style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
+        >
+            О приложении
+        </a>
       </div>
     </div>
   );
