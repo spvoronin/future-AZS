@@ -17,7 +17,7 @@ class UserCreate(UserLogin):
 class PumpCreate(BaseModel):
     station_id : int = Field(title="Айди АЗС, на которой стоит ТРК")
     pump_number : int = Field(title="Номер ТРК на АЗС")
-    status : str = Field(Field="Статус")
+    status : str = Field(title="Статус")
     is_active : bool = Field(title="Доступность")
 
 class PricesCreate(BaseModel):
