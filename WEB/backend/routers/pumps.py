@@ -1,5 +1,4 @@
 from fastapi import APIRouter, HTTPException, status as http_status, Depends
-import os
 from dotenv import load_dotenv
 from schemas.schem import PumpCreate
 from database import get_db_pool
