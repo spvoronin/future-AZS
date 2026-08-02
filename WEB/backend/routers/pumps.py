@@ -1,8 +1,10 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 import psycopg2
 import os
 from dotenv import load_dotenv
 from schemas.schem import PumpCreate
+from database import get_db_pool
+import asyncpg
 
 load_dotenv()
 
@@ -19,65 +21,30 @@ router_pumps = APIRouter(
 
 
 @router_pumps.get("/{id_pump}")
-async def get_one_pump(id_pump: int):
-    connection = None
-    try:
-        connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
-        connection.autocommit = True
-        with connection.cursor() as cursor:
-            cursor.execute('select id, station_id, pump_number, status, is_active from pumps where id=%s',
-                           (id_pump,))
-            data_one_pump = cursor.fetchone()
-            if data_one_pump is None:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"ТРК с ID {id_pump} не найдена"
-                )
-        data_res = {"id": data_one_pump[0], "station_id": data_one_pump[1], "pump_number": data_one_pump[2],
-                    "status": data_one_pump[3], "is_active": data_one_pump[4]}
-        return data_res
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f'info: ошибка {e}')
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Внутренняя ошибка сервера при поиске ТРК"
-        )
-    finally:
-        if connection:
-            connection.close()
-            print('info: коннект закрыт')
+async def get_one_pump(id_pump: int, pool: asyncpg.Pool = Depends(get_db_pool)):
+    async with pool.acquire() as connection:
+        query = 'select id, station_id, pump_number, status, is_active from pumps where id=$1 limit 1'
+        data_one_pump = await connection.fetchrow(query, id_pump)
+        if not data_one_pump:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"ТРК с ID {id_pump} не найдена"
+            )
+        return dict(data_one_pump)
 
 
 @router_pumps.post("", status_code=status.HTTP_201_CREATED)
-async def add_new_pump(data_about_new_pump: PumpCreate):
-    connection = None
-    try:
-        connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
-        connection.autocommit = True
-        with connection.cursor() as cursor:
-            cursor.execute(
-                'insert into pumps(station_id, pump_number, status, is_active) values (%s, %s, %s, %s) returning id', (
-                    data_about_new_pump.station_id, data_about_new_pump.pump_number,
-                    data_about_new_pump.status,
-                    data_about_new_pump.is_active))
-            new_id = cursor.fetchone()[0]
-        return {"status_res": "ok", "code": 201, "new_id": new_id, "station_id": data_about_new_pump.station_id,
-                "pump_number": data_about_new_pump.pump_number, "status": data_about_new_pump.status,
-                "is_active": data_about_new_pump.is_active}
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f'info: ошибка {e}')
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Не удалось создать ТРК"
+async def add_new_pump(data_about_new_pump: PumpCreate, pool: asyncpg.Pool = Depends(get_db_pool)):
+    async with pool.acquire() as connection:
+        query = 'insert into pumps(station_id, pump_number, status, is_active) values ($1, $2, $3, $4) returning id'
+        new_id = await connection.fetchval(
+            query,
+            data_about_new_pump.station_id,
+            data_about_new_pump.pump_number,
+            data_about_new_pump.status,
+            data_about_new_pump.is_active
         )
-    finally:
-        if connection:
-            connection.close()
-            print('info: коннект закрыт')
+    return {"status_res": "ok", "code": 201, "new_id": new_id, **data_about_new_pump.model_dump()}
 
 
 @router_pumps.put("/{pump_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -123,8 +90,9 @@ async def update_data_about_pump(pump_id: int, station_id: int | None = None, pu
             connection.close()
             print('info: коннект закрыт')
 
+
 @router_pumps.delete("/{pump_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_pump(pump_id : int):
+async def delete_pump(pump_id: int):
     connection = None
     try:
         connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)

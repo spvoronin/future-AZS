@@ -22,7 +22,7 @@ app = FastAPI(lifespan=lifespan)
 
 origins = [
     "https://smartaf.ru",
-    "http://localhost:5173", # для локальной разработки, если нужно
+    "http://localhost:5173",
 ]
 
 app.add_middleware(
