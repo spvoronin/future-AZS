@@ -1,134 +1,322 @@
 create table region
 (
-id serial primary key, -- уникальный айди региона
-region_name text -- название региона
+    -- Уникальный айди региона
+    id SERIAL PRIMARY KEY,
+
+    -- Название региона
+    region_name TEXT NOT NULL
 );
 
 create table station
 (
-id serial primary key, -- уникальный id АЗС
-adress text not null, -- адрес АЗС
-rating int not null, -- рейтинг АЗС
-region_id int, -- айди
-CONSTRAINT fk_region_id FOREIGN KEY(region_id) REFERENCES region(id) on delete cascade
+    -- Уникальный id АЗС
+    id SERIAL PRIMARY KEY,
+
+    -- Адрес АЗС
+    address TEXT NOT NULL,
+
+    -- Рейтинг АЗС
+    rating INT NOT NULL,
+
+    -- Айди
+    region_id INT,
+
+    -- Внешний ключ на таблицу с регионами
+    CONSTRAINT fk_region_id
+        FOREIGN KEY(region_id)
+        REFERENCES region(id)
+        ON DELETE SET NULL
 );
 
 create table users
 (
-id serial primary key,
-phone varchar(20) not null unique, -- Номер телефона
-email varchar(100) unique, -- Почта для чеков и уведомлений
-password_hash varchar(255) not null, -- Хэш пароля
-first_name varchar(50), -- Имя клиента
-time timestamp default current_timestamp, -- время пинга
-number_of_car varchar(20) not null,
-is_Admin boolean default False
+    -- Уникальный id пользователя
+    id SERIAL PRIMARY KEY,
+
+    -- Номер телефона
+    phone VARCHAR(20) NOT NULL UNIQUE,
+
+    -- Почта для чеков и уведомлений
+    email VARCHAR(100) NOT NULL UNIQUE,
+
+    -- Хэш пароля
+    password_hash VARCHAR(255) NOT NULL,
+
+    -- Имя клиента
+    first_name VARCHAR(50) NOT NULL,
+
+    -- Время пинга
+    time_ping TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    -- Номер автомобиля пользователя
+    number_of_car VARCHAR(20) NOT NULL,
+
+    -- Статус администратора
+    is_admin BOOLEAN DEFAULT False
 );
 
 create table pumps
 (
-id serial primary key, -- уникальный id колонки
-station_id int not null, -- айди АЗС
-pump_number int not null, -- номер колонки на заправке
-status varchar(20) DEFAULT 'idle', -- статус колонки idle(свободна), dispensing(налив), error(сбой)
-is_active boolean, -- доступна ли колонка
-CONSTRAINT unique_pump_per_station UNIQUE (station_id, pump_number), -- не может быть двух пар станция-номер_колонки
-constraint fk_station_id_PU foreign key (station_id) references station(id) on delete cascade
+    -- Уникальный id колонки
+    id SERIAL PRIMARY KEY,
+
+    -- Айди АЗС
+    station_id INT NOT NULL,
+
+    -- Номер колонки на заправке
+    pump_number INT NOT NULL,
+
+    -- Статус колонки idle(свободна), dispensing(налив), error(сбой)
+    status VARCHAR(20) DEFAULT 'idle',
+
+    -- Доступна ли колонка
+    is_active BOOLEAN NOT NULL,
+
+    -- Не может быть двух пар станция-номер_колонки
+    CONSTRAINT unique_pump_per_station
+        UNIQUE (station_id, pump_number),
+
+    -- Внешний ключ на таблицу с АЗС
+    CONSTRAINT fk_station_id_PU
+        FOREIGN KEY (station_id)
+        REFERENCES station(id)
+        ON DELETE CASCADE
 );
 
 create table tanks
 (
-id serial primary key, -- уникальный id резервуара(одного раздела)
-station_id int not null, -- айди АЗС
-tank_number int not null, -- номер резервуара
-compartment_number int not null, -- номер раздела в резервуаре
-fuel_type varchar(20) not null, -- вид топлива
-max_capacity real not null, -- объём раздела резервуара
-current_liters int not null, -- настоящий объём в процентах
-temperature real not null, -- температура раздела
-time timestamp default current_timestamp, -- время пинга
-CONSTRAINT unique_compartment UNIQUE (station_id, tank_number, compartment_number), -- уникальный набор id станции, номера резервуара, номера раздела
-constraint fk_station_id_TA foreign key (station_id) references station(id) on delete cascade
+    -- уникальный id резервуара(одного раздела)
+    id SERIAL PRIMARY KEY,
+
+    -- айди АЗС
+    station_id INT NOT NULL,
+
+    -- номер резервуара
+    tank_number INT NOT NULL,
+
+    -- номер раздела в резервуаре
+    compartment_number INT NOT NULL,
+
+     -- вид топлива
+    fuel_type VARCHAR(20) NOT NULL,
+
+    -- объём раздела резервуара
+    max_capacity REAL NOT NULL,
+
+    -- настоящий объём в процентах
+    current_liters REAL NOT NULL,
+
+    -- температура раздела
+    temperature REAL NOT NULL,
+
+    -- время пинга
+    time_ping TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    -- Уникальный набор (id станции, номера резервуара, номера раздела)
+    CONSTRAINT unique_compartment
+        UNIQUE (station_id, tank_number, compartment_number),
+
+    -- Внешний ключ на таблицу с АЗС
+    CONSTRAINT fk_station_id_TA
+        FOREIGN KEY (station_id)
+        REFERENCES station(id)
+        ON DELETE CASCADE
 );
 
 create table prices
 (
-region_id int not null, -- айди региона
-fuel_type varchar(20) not null, -- тип топлива
-price_per_liter real not null, -- цена
-time timestamp default current_timestamp, -- время пинга
-primary key (region_id, fuel_type),
-CONSTRAINT fk_region_PR FOREIGN KEY(region_id) REFERENCES region(id) on delete cascade
+    -- Айди региона
+    region_id INT NOT NULL,
+
+    -- Тип топлива
+    fuel_type VARCHAR(20) NOT NULL,
+
+     -- Цена
+    price_per_liter REAL NOT NULL,
+
+    -- Время пинга
+    time_ping TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    -- Все пары айди_региона-тип_топлива уникальны
+    PRIMARY KEY (region_id, fuel_type),
+
+    -- Внешний ключ на таблицу с регионами
+    CONSTRAINT fk_region_PR
+        FOREIGN KEY(region_id)
+        REFERENCES region(id)
+        ON DELETE CASCADE
 );
 
 create table transactions
 (
-id serial primary key, -- уникальный id транзакции
-pump_id int not null, -- номер колонки
-fuel_type varchar(20) not null, -- тип топлива
-requested_liters real not null, -- сколько литров заказано
-status varchar(20) DEFAULT 'pending', -- статус транзакции pending(ожидание оплаты), progress(налив), completed(завершено)
-time timestamp default current_timestamp, -- время пинга
-user_id int not null, -- id пользователя
-CONSTRAINT fk_pump_id FOREIGN KEY(pump_id) REFERENCES pumps(id), -- внешний ключ с айди колонки
-constraint fk_user_id_TR foreign key (user_id) references users(id) on delete cascade
+    -- Уникальный id транзакции
+    id SERIAL PRIMARY KEY,
+
+    -- Номер колонки
+    pump_id INT NOT NULL,
+
+    -- Тип топлива
+    fuel_type VARCHAR(20) NOT NULL,
+
+    -- Сколько литров заказано
+    requested_liters REAL NOT NULL,
+
+    -- Статус транзакции pending(ожидание оплаты), progress(налив), completed(завершено)
+    status VARCHAR(20) DEFAULT 'pending',
+
+    -- Время пинга
+    time_ping TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    -- id пользователя
+    user_id INT NOT NULL,
+
+    -- Внешний ключ на таблицу с ТРК
+    CONSTRAINT fk_pump_id
+        FOREIGN KEY(pump_id)
+        REFERENCES pumps(id)
+        ON DELETE CASCADE,
+
+    -- Внешний ключ на таблицу пользователей
+    CONSTRAINT fk_user_id_TR
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE
 );
 
 create table loyalty_cards
 (
-id serial primary key, -- id карты лояльности
-user_id int not null, -- id пользователя
-card_number varchar(30) not null unique, -- номер карты
-bonus_balance int default 0, -- баланс карты
-discount_percent real default 0.0, -- персональный процент карты
-status varchar(20) default 'active', -- active, blocked
-time timestamp default current_timestamp, -- время пинга
-constraint fk_user_id_LC foreign key (user_id) references users(id) on delete cascade
+    -- id карты лояльности
+    id SERIAL PRIMARY KEY,
+
+    -- id пользователя
+    user_id INT NOT NULL,
+
+    -- Номер карты
+    card_number VARCHAR(30) NOT NULL UNIQUE,
+
+    -- Баланс карты
+    bonus_balance INT DEFAULT 0,
+
+    -- Персональный процент карты
+    discount_percent REAL DEFAULT 0.0,
+
+    -- Статус карты (active, blocked)
+    status VARCHAR(20) DEFAULT 'active',
+
+    -- Время пинга
+    time_ping TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    -- Внешний ключ на таблицу пользователей
+    CONSTRAINT fk_user_id_LC
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE
 );
 
 create table uuid
 (
-id serial primary key, -- номер(айди устройства)
-uuid text not null unique, -- уникальный код устрйоства
-station_id int not null, -- номер станции устрйоства
-constraint fk_station_id_UU foreign key (station_id) references station(id) on delete cascade
+    -- Номер(айди устройства)
+    id SERIAL PRIMARY KEY,
+
+    -- Уникальный код устройства
+    uuid TEXT NOT NULL UNIQUE,
+
+    -- Номер станции устройства
+    station_id INT NOT NULL,
+
+    -- Внешний ключ на таблицу с АЗС
+    CONSTRAINT fk_station_id_UU
+        FOREIGN KEY (station_id)
+        REFERENCES station(id)
+        ON DELETE CASCADE
 );
 
 create table sensors
 (
-id serial primary key, -- айди записи
-uuid text not null, -- уникальный айди устройства
-electric_current real not null, -- значение тока с AS712
-flame boolean not null, -- датчик пламени
-gas int not null, -- показания с MQ-2
-ambient_humidity real not null, -- влажность среды с DHT11
-ambient_temperature real not null, -- температура среды с DHT11
-tank_temperature real not null, -- температура в цистерне
-water_level int not null, -- уровень воды
-voltage real not null, -- датчик напряжения
-time timestamp default current_timestamp, -- время пинга
-constraint fk_uuid foreign key (uuid) references uuid(uuid) on delete cascade
+    -- Айди записи
+    id SERIAL PRIMARY KEY,
+
+    -- Уникальный айди устройства
+    uuid TEXT NOT NULL,
+
+    -- Значение тока с AS712
+    electric_current REAL NOT NULL,
+
+    -- Датчик пламени
+    flame BOOLEAN NOT NULL,
+
+    -- Показания с MQ-2
+    gas INT NOT NULL,
+
+    -- Влажность среды с DHT11
+    ambient_humidity REAL NOT NULL,
+
+    -- Температура среды с DHT11
+    ambient_temperature REAL NOT NULL,
+
+    -- Температура в цистерне
+    tank_temperature REAL NOT NULL,
+
+    -- Уровень воды
+    water_level INT NOT NULL,
+
+    -- Датчик напряжения
+    voltage REAL NOT NULL,
+
+    -- Время пинга
+    time_ping TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    -- Внешний ключ на таблицу с uuid устройств
+    CONSTRAINT fk_uuid
+        FOREIGN KEY (uuid)
+        REFERENCES uuid(uuid)
+        ON DELETE CASCADE
 );
 
 create table cam
 (
-cam_id serial primary key, -- номер камеры в бд
-uuid text not null UNIQUE -- уникальный айди камеры
+    -- Номер камеры в бд
+    cam_id SERIAL PRIMARY KEY,
+
+    -- Уникальный айди камеры
+    uuid TEXT NOT NULL UNIQUE
 );
 
 create table images
 (
-image_id serial primary key, -- айди изображения
-image_time timestamp default current_timestamp, -- время записи изображения
-image_data BYTEA not null, -- изображение в байтовом виде
-cam_id int not null, -- уникальный айди камеры
-constraint key_cam_id foreign key(cam_id) references cam(cam_id)
+    -- айди изображения
+    image_id SERIAL PRIMARY KEY,
+
+    -- время записи изображения
+    image_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    -- изображение в байтовом виде
+    image_data BYTEA NOT NULL,
+
+    -- уникальный айди камеры
+    cam_id INT NOT NULL,
+
+    -- Внешний ключ на таблицу с uuid камер
+    CONSTRAINT key_cam_id
+        FOREIGN KEY(cam_id)
+        REFERENCES cam(cam_id)
+        ON DELETE CASCADE
 );
 
 create table number_of_car
 (
-id serial primary key, -- айди номера
-image_id int not null UNIQUE, -- айди изображения, где находится этот номер
-number_car varchar(20) not null UNIQUE, -- сам номер автомобиля
-constraint key_img_id foreign key(image_id) references images(image_id)
-)
+    -- айди номера
+    id SERIAL PRIMARY KEY,
+
+    -- айди изображения, где находится этот номер
+    image_id INT NOT NULL UNIQUE,
+
+    -- сам номер автомобиля
+    number_car VARCHAR(20) NOT NULL UNIQUE,
+
+    -- Внешний ключ на таблицу с изображениями
+    CONSTRAINT key_img_id
+        FOREIGN KEY(image_id)
+        REFERENCES images(image_id)
+        ON DELETE CASCADE
+);

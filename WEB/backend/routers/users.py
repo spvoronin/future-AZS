@@ -103,7 +103,7 @@ async def add_new_user(data_about_new_user: UserCreate):
 
 
 @router_users.put("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def update_data_about_user(user_id: int = 0, phone: str | None = None, email: str | None = None,
+async def update_data_about_user(user_id: int, phone: str | None = None, email: str | None = None,
                                  first_name: str | None = None, number_of_car: str | None = None):
     connection = None
     try:
@@ -146,7 +146,7 @@ async def login_user(data_for_login: UserLogin):
         connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
         connection.autocommit = True
         with connection.cursor() as cursor:
-            cursor.execute('select phone, first_name, number_of_car, is_Admin from users where email = %s and password_hash = %s',
+            cursor.execute('select phone, first_name, number_of_car, is_admin from users where email = %s and password_hash = %s',
                            (data_for_login.email, data_for_login.password_hash))
             ans = cursor.fetchone()
             data_about_user = ans if ans else None

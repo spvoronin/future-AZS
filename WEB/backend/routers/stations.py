@@ -27,10 +27,10 @@ async def get_all_stations():
         connection.autocommit = True
         with connection.cursor() as cursor:
             cursor.execute(
-                'select station.id, region.region_name, adress, rating from station JOIN region ON station.region_id = region.id')
+                'select station.id, region.region_name, address, rating from station LEFT JOIN region ON station.region_id = region.id')
             data_all_stations = cursor.fetchall()
         for records in data_all_stations:
-            data_res.append({"id": records[0], "region": records[1], "adress": records[2], "rating": records[3]})
+            data_res.append({"id": records[0], "region": records[1], "address": records[2], "rating": records[3]})
         return data_res
     except Exception as e:
         print(f'info: ошибка {e}')
@@ -52,7 +52,7 @@ async def get_one_station(station_id: int):
         connection.autocommit = True
         with connection.cursor() as cursor:
             cursor.execute(
-                'select station.id, region.region_name, adress, rating from station JOIN region ON station.region_id = region.id where station.id=%s',
+                'select station.id, region.region_name, address, rating from station LEFT JOIN region ON station.region_id = region.id where station.id=%s',
                 (str(station_id),))
             data_one_station = cursor.fetchone()
             if data_one_station is None:
@@ -60,7 +60,7 @@ async def get_one_station(station_id: int):
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Станция не найдена"
                 )
-        data_res = {"id": data_one_station[0], "region": data_one_station[1], "adress": data_one_station[2],
+        data_res = {"id": data_one_station[0], "region": data_one_station[1], "address": data_one_station[2],
                     "rating": data_one_station[3]}
         return data_res
     except HTTPException:
@@ -93,11 +93,11 @@ async def add_new_station(data_about_new_station: StationCreate):
                                (data_about_new_station.region,))
                 region_id = cursor.fetchone()[0]
 
-            cursor.execute('insert into station(adress, rating, region_id) values (%s, %s, %s) RETURNING id', (
-                data_about_new_station.adress, data_about_new_station.rating, str(region_id)))
+            cursor.execute('insert into station(address, rating, region_id) values (%s, %s, %s) RETURNING id', (
+                data_about_new_station.address, data_about_new_station.rating, str(region_id)))
             new_id = cursor.fetchone()[0]
         return {"status": "ok", "code": 201, "new_id": new_id, "region_id": region_id,
-                "address": data_about_new_station.adress, "rating": data_about_new_station.rating}
+                "address": data_about_new_station.address, "rating": data_about_new_station.rating}
     except Exception as e:
         print(f'info: ошибка {e}')
         raise HTTPException(
@@ -111,7 +111,7 @@ async def add_new_station(data_about_new_station: StationCreate):
 
 
 @router_stations.put("/{station_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def update_data_about_station(station_id: int = 0, region: str | None = None, adress: str | None = None):
+async def update_data_about_station(station_id: int, region: str | None = None, address: str | None = None):
     connection = None
     try:
         connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
@@ -128,8 +128,8 @@ async def update_data_about_station(station_id: int = 0, region: str | None = No
                     cursor.execute('INSERT INTO region(region_name) VALUES (%s) RETURNING id', (region,))
                     region_id = cursor.fetchone()[0]
                 cursor.execute("update station set region_id=%s where id=%s", (region_id, station_id))
-            if adress:
-                cursor.execute("update station set adress=%s where id=%s", (adress, station_id))
+            if address:
+                cursor.execute("update station set address=%s where id=%s", (address, station_id))
         return None
     except HTTPException:
         raise
