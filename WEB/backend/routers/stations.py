@@ -1,16 +1,7 @@
-from fastapi import APIRouter, HTTPException, status
-import psycopg2
-import os
-from dotenv import load_dotenv
+from fastapi import APIRouter, HTTPException, status as http_status, Depends
 from schemas.schem import StationCreate
-
-load_dotenv()
-
-HOST = os.getenv("HOST")
-NAME_USER = os.getenv("NAME_USER")
-PASSWORD = os.getenv("PASSWORD")
-DATABASE = os.getenv("DATABASE")
-CONNECT = os.getenv("CONNECT")
+from database import get_db_pool
+import asyncpg
 
 router_stations = APIRouter(
     prefix="/stations",
@@ -19,181 +10,157 @@ router_stations = APIRouter(
 
 
 @router_stations.get("")
-async def get_all_stations():
-    connection = None
-    try:
-        data_res = []
-        connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
-        connection.autocommit = True
-        with connection.cursor() as cursor:
-            cursor.execute(
-                'select station.id, region.region_name, address, rating from station LEFT JOIN region ON station.region_id = region.id')
-            data_all_stations = cursor.fetchall()
-        for records in data_all_stations:
-            data_res.append({"id": records[0], "region": records[1], "address": records[2], "rating": records[3]})
-        return data_res
-    except Exception as e:
-        print(f'info: ошибка {e}')
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Не удалось получить список станций"
-        )
-    finally:
-        if connection:
-            connection.close()
-            print('info: коннект закрыт')
+async def get_all_stations(pool: asyncpg.Pool = Depends(get_db_pool)):
+    async with pool.acquire() as connection:
+        query = '''SELECT
+                        station.id AS id,
+                        region.region_name AS region,
+                        address,
+                        rating
+                   FROM station
+                   LEFT JOIN region ON station.region_id = region.id'''
+        data_all_stations = await connection.fetch(query)
+        return [dict(record) for record in data_all_stations]
 
 
 @router_stations.get("/{station_id}")
-async def get_one_station(station_id: int):
-    connection = None
-    try:
-        connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
-        connection.autocommit = True
-        with connection.cursor() as cursor:
-            cursor.execute(
-                'select station.id, region.region_name, address, rating from station LEFT JOIN region ON station.region_id = region.id where station.id=%s',
-                (str(station_id),))
-            data_one_station = cursor.fetchone()
-            if data_one_station is None:
+async def get_one_station(station_id: int,
+                          pool: asyncpg.Pool = Depends(get_db_pool)):
+    async with pool.acquire() as connection:
+        query = '''SELECT
+                        station.id AS id,
+                        region.region_name AS region,
+                        address,
+                        rating
+                   FROM station
+                   LEFT JOIN region ON station.region_id = region.id
+                   WHERE station.id=$1'''
+        data_one_station = await connection.fetchrow(query, station_id)
+        if not data_one_station:
+            raise HTTPException(
+                status_code=http_status.HTTP_404_NOT_FOUND,
+                detail="Станция не найдена"
+            )
+        return dict(data_one_station)
+
+
+@router_stations.post("", status_code=http_status.HTTP_201_CREATED)
+async def add_new_station(data_about_new_station: StationCreate,
+                          pool: asyncpg.Pool = Depends(get_db_pool)):
+    async with pool.acquire() as connection:
+        async with connection.transaction():
+            query = '''
+                INSERT INTO region (region_name)
+                VALUES ($1)
+                ON CONFLICT (region_name) DO UPDATE 
+                    SET region_name = EXCLUDED.region_name
+                RETURNING id
+            '''
+            region_id = await connection.fetchval(query, data_about_new_station.region)
+
+            query = '''INSERT INTO station(address, rating, region_id)
+                       VALUES
+                            ($1, $2, $3)
+                       RETURNING id'''
+            new_id = await connection.fetchval(query, data_about_new_station.address, data_about_new_station.rating, region_id)
+            return {
+                "status": "ok",
+                "code": 201,
+                "new_id": new_id,
+                "region_id": region_id,
+                "address": data_about_new_station.address,
+                "rating": data_about_new_station.rating
+            }
+
+
+@router_stations.put("/{station_id}", status_code=http_status.HTTP_204_NO_CONTENT)
+async def update_data_about_station(station_id: int,
+                                    region: str | None = None,
+                                    address: str | None = None,
+                                    pool: asyncpg.Pool = Depends(get_db_pool)):
+    update_data = {}
+    async with pool.acquire() as connection:
+        async with connection.transaction():
+            query = '''SELECT
+                            id
+                       FROM station
+                       WHERE id=$1'''
+            res = await connection.fetchval(query, station_id)
+
+            if not res:
                 raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
+                    status_code=http_status.HTTP_404_NOT_FOUND,
                     detail="Станция не найдена"
                 )
-        data_res = {"id": data_one_station[0], "region": data_one_station[1], "address": data_one_station[2],
-                    "rating": data_one_station[3]}
-        return data_res
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f'info: ошибка {e}')
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Ошибка сервера при поиске станции"
-        )
-    finally:
-        if connection:
-            connection.close()
-            print('info: коннект закрыт')
+
+            if region is not None:
+                query = '''
+                    INSERT INTO region (region_name)
+                    VALUES ($1)
+                    ON CONFLICT (region_name) DO UPDATE 
+                        SET region_name = EXCLUDED.region_name
+                    RETURNING id
+                '''
+                region_id = await connection.fetchval(query, region)
+                update_data["region_id"] = region_id
+
+            if address is not None:
+                update_data["address"] = address
+
+            fields, values = [], []
+            idx = 1
+
+            for key, val in update_data.items():
+                fields.append(f"{key} = ${idx}")
+                values.append(val)
+                idx += 1
+
+            if not fields:
+                return None
+
+            query = f"UPDATE station SET {', '.join(fields)} WHERE id=${idx}::int"
+            status_str = await connection.execute(query, *values, station_id)
+
+            return None
 
 
-@router_stations.post("", status_code=status.HTTP_201_CREATED)
-async def add_new_station(data_about_new_station: StationCreate):
-    connection = None
-    try:
-        connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
-        connection.autocommit = True
-        with connection.cursor() as cursor:
-            cursor.execute('select id from region where region_name=%s', (data_about_new_station.region,))
-            res = cursor.fetchone()
-            if res:
-                region_id = res[0]
-            else:
-                cursor.execute('insert into region(region_name) values (%s) RETURNING id',
-                               (data_about_new_station.region,))
-                region_id = cursor.fetchone()[0]
-
-            cursor.execute('insert into station(address, rating, region_id) values (%s, %s, %s) RETURNING id', (
-                data_about_new_station.address, data_about_new_station.rating, str(region_id)))
-            new_id = cursor.fetchone()[0]
-        return {"status": "ok", "code": 201, "new_id": new_id, "region_id": region_id,
-                "address": data_about_new_station.address, "rating": data_about_new_station.rating}
-    except Exception as e:
-        print(f'info: ошибка {e}')
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Не удалось создать станцию"
-        )
-    finally:
-        if connection:
-            connection.close()
-            print('info: коннект закрыт')
-
-
-@router_stations.put("/{station_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def update_data_about_station(station_id: int, region: str | None = None, address: str | None = None):
-    connection = None
-    try:
-        connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
-        connection.autocommit = True
-        with connection.cursor() as cursor:
-            cursor.execute("SELECT id FROM station WHERE id=%s", (station_id,))
-            if not cursor.fetchone():
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Станция не найдена")
-            if region:
-                cursor.execute('select id from region where region_name=%s', (region,))
-                res = cursor.fetchone()
-                region_id = res[0] if res else None
-                if not region_id:
-                    cursor.execute('INSERT INTO region(region_name) VALUES (%s) RETURNING id', (region,))
-                    region_id = cursor.fetchone()[0]
-                cursor.execute("update station set region_id=%s where id=%s", (region_id, station_id))
-            if address:
-                cursor.execute("update station set address=%s where id=%s", (address, station_id))
+@router_stations.delete("/{station_id}", status_code=http_status.HTTP_204_NO_CONTENT)
+async def delete_station(station_id: int,
+                         pool: asyncpg.Pool = Depends(get_db_pool)):
+    async with pool.acquire() as connection:
+        query = '''DELETE FROM station
+                   WHERE id=$1'''
+        status_str = await connection.execute(query, station_id)
+        deleted_count = int(status_str.split()[-1])
+        if deleted_count == 0:
+            raise HTTPException(
+                status_code=http_status.HTTP_404_NOT_FOUND,
+                detail="Станция не найдена"
+            )
         return None
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f'info: ошибка {e}')
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Не удалось обновить данные станции"
-        )
-    finally:
-        if connection:
-            connection.close()
-            print('info: коннект закрыт')
-
-
-@router_stations.delete("/{station_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_station(station_id: int):
-    connection = None
-    try:
-        connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
-        connection.autocommit = True
-        with connection.cursor() as cursor:
-            cursor.execute("delete from station where id=%s", (str(station_id),))
-            if cursor.rowcount == 0:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Станция не найдена"
-                )
-        return None
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f'info: ошибка {e}')
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Не удалось удалить станцию"
-        )
-    finally:
-        if connection:
-            connection.close()
-            print('info: коннект закрыт')
 
 
 @router_stations.get("/{station_id}/pumps")
-async def data_about_pumps_on_stations(station_id: int):
-    connection = None
-    try:
-        data_res = []
-        connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
-        connection.autocommit = True
-        with connection.cursor() as cursor:
-            cursor.execute('select id, pump_number, status, is_active from pumps where station_id=%s', (str(station_id),))
-            data_all_pumps_on_one_station = cursor.fetchall()
-        for records in data_all_pumps_on_one_station:
-            data_res.append(
-                {"id": records[0], "pump_number": records[1], "status": records[2], "is_active": records[3]})
-        return data_res
-    except Exception as e:
-        print(f'info: ошибка {e}')
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Не удалось получить колонки"
-        )
-    finally:
-        if connection:
-            connection.close()
-            print('info: коннект закрыт')
+async def data_about_pumps_on_stations(station_id: int,
+                                       pool: asyncpg.Pool = Depends(get_db_pool)):
+    async with pool.acquire() as connection:
+        query = '''SELECT
+                        id
+                   FROM station
+                   WHERE id=$1'''
+        res = await connection.fetchval(query, station_id)
+
+        if not res:
+            raise HTTPException(
+                status_code=http_status.HTTP_404_NOT_FOUND,
+                detail="Станция не найдена"
+            )
+        query = '''SELECT
+                        id,
+                        pump_number,
+                        status,
+                        is_active
+                    FROM pumps
+                    WHERE station_id=$1'''
+        data_all_pumps_on_one_station = await connection.fetch(query, station_id)
+        return [dict(record) for record in data_all_pumps_on_one_station]

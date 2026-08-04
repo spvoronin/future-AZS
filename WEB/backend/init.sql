@@ -4,7 +4,7 @@ create table region
     id SERIAL PRIMARY KEY,
 
     -- Название региона
-    region_name TEXT NOT NULL
+    region_name TEXT NOT NULL UNIQUE
 );
 
 create table station
