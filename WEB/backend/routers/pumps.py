@@ -1,10 +1,7 @@
 from fastapi import APIRouter, HTTPException, status as http_status, Depends
-from dotenv import load_dotenv
 from schemas.schem import PumpCreate
 from database import get_db_pool
 import asyncpg
-
-load_dotenv()
 
 router_pumps = APIRouter(
     prefix="/pumps",
@@ -15,7 +12,7 @@ router_pumps = APIRouter(
 async def get_one_pump(id_pump: int, pool: asyncpg.Pool = Depends(get_db_pool)):
     async with pool.acquire() as connection:
 
-        query = 'select id, station_id, pump_number, status, is_active from pumps where id=$1 limit 1'
+        query = 'select id, station_id, pump_number, status, is_active from pumps where id=$1'
         data_one_pump = await connection.fetchrow(query, id_pump)
 
         if not data_one_pump:
@@ -56,7 +53,7 @@ async def update_data_about_pump(
         "station_id": station_id,
         "pump_number": pump_number,
         "status": status,
-        "is_active": is_active,
+        "is_active": is_active
     }
     fields, values = [], []
     idx = 1
@@ -67,20 +64,20 @@ async def update_data_about_pump(
             values.append(val)
             idx += 1
 
-    if not fields:
-        return None
-
     async with pool.acquire() as connection:
-        query = f"UPDATE pumps SET {', '.join(fields)} WHERE id=${idx}::int"
-
-        status_str = await connection.execute(query, *values, pump_id)
-        update_count = int(status_str.split()[-1])
-
-        if update_count == 0:
+        exists = await connection.fetchval("SELECT id FROM pumps WHERE id = $1", pump_id)
+        if not exists:
             raise HTTPException(
                 status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="ТРК не найдена"
             )
+
+        if not fields:
+            return None
+
+        query = f"UPDATE pumps SET {', '.join(fields)} WHERE id=${idx}::int"
+
+        status_str = await connection.execute(query, *values, pump_id)
 
         return None
 
