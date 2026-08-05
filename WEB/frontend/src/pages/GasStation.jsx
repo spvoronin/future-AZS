@@ -134,7 +134,7 @@ export default function GasStation({ setStationLabel }) {
                   onClick={() => setSelectedFuel(p.fuel_type)}
                 >
                   <div className="fuel-name">{p.fuel_type}</div>
-                  <div className="fuel-price">{p.price_per_liter} ₽/л</div>
+                  <div className="fuel-price">{Number(p.price_per_liter).toFixed(2)} ₽/л</div>
                 </div>
               ))
             )}
