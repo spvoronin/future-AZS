@@ -76,8 +76,7 @@ async def update_data_about_pump(
             return None
 
         query = f"UPDATE pumps SET {', '.join(fields)} WHERE id=${idx}::int"
-
-        status_str = await connection.execute(query, *values, pump_id)
+        await connection.execute(query, *values, pump_id)
 
         return None
 
