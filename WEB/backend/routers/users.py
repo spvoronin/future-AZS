@@ -1,17 +1,12 @@
-from fastapi import APIRouter, HTTPException, status
-import psycopg2
+from fastapi import APIRouter, HTTPException, status as http_status, Depends
 import os
 from dotenv import load_dotenv
 from schemas.schem import UserCreate, UserLogin
+from database import get_db_pool
+import asyncpg
 import jwt
 
 load_dotenv()
-
-HOST = os.getenv("HOST")
-NAME_USER = os.getenv("NAME_USER")
-PASSWORD = os.getenv("PASSWORD")
-DATABASE = os.getenv("DATABASE")
-CONNECT = os.getenv("CONNECT")
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 
@@ -22,154 +17,148 @@ router_users = APIRouter(
 
 
 @router_users.get("")
-async def get_all_users():
-    connection = None
-    try:
-        data_res = []
-        connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
-        connection.autocommit = True
-        with connection.cursor() as cursor:
-            cursor.execute('select id, phone, email, first_name, number_of_car from users order by id desc')
-            data_all_users = cursor.fetchall()
-        for records in data_all_users:
-            data_res.append({"id": records[0], "phone": records[1], "email": records[2], "first_name": records[3],
-                             "number_of_car": records[4]})
-        return data_res
-    except Exception as e:
-        print(f'info: ошибка {e}')
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Ошибка сервера"
-        )
-    finally:
-        if connection:
-            connection.close()
-            print('info: коннект закрыт')
+async def get_all_users(pool: asyncpg.Pool = Depends(get_db_pool)):
+    async with pool.acquire() as connection:
+        query = '''SELECT
+                        id,
+                        phone,
+                        email,
+                        first_name,
+                        number_of_car
+                FROM users
+                ORDER BY id DESC'''
+        rows = await connection.fetch(query)
+        return [dict(row) for row in rows]
 
 
 @router_users.get("/{user_id}")
-async def get_one_user(user_id: int):
-    connection = None
-    try:
-        connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
-        connection.autocommit = True
-        with connection.cursor() as cursor:
-            cursor.execute('select id, phone, email, first_name, number_of_car from users where id=%s', (str(user_id),))
-            data_one_user = cursor.fetchone()
-            if data_one_user is None:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Пользователь не найден"
-                )
-        data_res = {"id": data_one_user[0], "phone": data_one_user[1], "email": data_one_user[2],
-                    "first_name": data_one_user[3], "number_of_car": data_one_user[4]}
-        return data_res
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f'info: ошибка {e}')
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Ошибка сервера"
+async def get_one_user(user_id: int,
+                       pool: asyncpg.Pool = Depends(get_db_pool)):
+    async with pool.acquire() as connection:
+        query = '''SELECT
+                        id,
+                        phone,
+                        email,
+                        first_name,
+                        number_of_car
+                   FROM users
+                   WHERE id=$1'''
+        user = await connection.fetchrow(query, user_id)
+
+        if not user:
+            raise HTTPException(
+                status_code=http_status.HTTP_404_NOT_FOUND,
+                detail="Пользователь не найден"
+            )
+
+        return dict(user)
+
+
+@router_users.post("/register", status_code=http_status.HTTP_201_CREATED)
+async def add_new_user(data_about_new_user: UserCreate,
+                       pool: asyncpg.Pool = Depends(get_db_pool)):
+    async with pool.acquire() as connection:
+        query = '''INSERT INTO users(phone, email, password_hash, first_name, number_of_car)
+                   VALUES ($1, $2, $3, $4, $5)
+                   RETURNING id'''
+        new_id = await connection.fetchval(
+            query,
+            data_about_new_user.phone,
+            data_about_new_user.email,
+            data_about_new_user.password_hash,
+            data_about_new_user.first_name,
+            data_about_new_user.number_of_car
         )
-    finally:
-        if connection:
-            connection.close()
-            print('info: коннект закрыт')
+        return {
+            "status": "ok",
+            "code": 201,
+            "new_id": new_id,
+            "phone": data_about_new_user.phone,
+            "email": data_about_new_user.email,
+            "first_name": data_about_new_user.first_name,
+            "number_of_car": data_about_new_user.number_of_car
+        }
 
 
-@router_users.post("/register")
-async def add_new_user(data_about_new_user: UserCreate):
-    connection = None
-    try:
-        connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
-        connection.autocommit = True
-        with connection.cursor() as cursor:
-            cursor.execute(
-                'insert into users(phone, email, password_hash, first_name, number_of_car) values (%s, %s, %s, %s, %s) RETURNING id',
-                (data_about_new_user.phone, data_about_new_user.email, data_about_new_user.password_hash,
-                 data_about_new_user.first_name, data_about_new_user.number_of_car))
-            new_id = cursor.fetchone()[0]
-        return {"status": "ok", "code": 201, "new_id": new_id, "phone": data_about_new_user.phone,
-                "email": data_about_new_user.email, "first_name": data_about_new_user.first_name,
-                "number_of_car": data_about_new_user.number_of_car}
-    except Exception as e:
-        print(f'info: ошибка {e}')
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Ошибка при создании пользователя")
-    finally:
-        if connection:
-            connection.close()
-            print('info: коннект закрыт')
+@router_users.put("/{user_id}", status_code=http_status.HTTP_204_NO_CONTENT)
+async def update_data_about_user(user_id: int,
+                                 phone: str | None = None,
+                                 email: str | None = None,
+                                 first_name: str | None = None,
+                                 number_of_car: str | None = None,
+                                 pool: asyncpg.Pool = Depends(get_db_pool)):
+    fields = []
+    values = []
+    idx = 1
 
+    update_data = {
+        "phone": phone,
+        "email": email,
+        "first_name": first_name,
+        "number_of_car": number_of_car
+    }
 
-@router_users.put("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def update_data_about_user(user_id: int, phone: str | None = None, email: str | None = None,
-                                 first_name: str | None = None, number_of_car: str | None = None):
-    connection = None
-    try:
-        connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
-        connection.autocommit = True
-        with connection.cursor() as cursor:
-            fields, values = [], []
-            if phone: fields.append("phone=%s"); values.append(phone)
-            if email: fields.append("email=%s"); values.append(email)
-            if first_name: fields.append("first_name=%s"); values.append(first_name)
-            if number_of_car: fields.append("number_of_car=%s"); values.append(number_of_car)
+    for key, val in update_data.items():
+        if val is not None:
+            fields.append(f"{key} = ${idx}")
+            values.append(val)
+            idx += 1
 
-            if not fields: return None
-            query = f"UPDATE users SET {', '.join(fields)} WHERE id=%s"
-            cursor.execute(query, tuple(values))
-            if cursor.rowcount == 0:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Пользователь не найден"
-                )
+    async with pool.acquire() as connection:
+        query = '''SELECT
+                        id
+                   FROM users
+                   WHERE id=$1'''
+        res = await connection.fetchval(query, user_id)
+
+        if not res:
+            raise HTTPException(
+                status_code=http_status.HTTP_404_NOT_FOUND,
+                detail="Пользователь не найден"
+            )
+
+        if not fields:
             return None
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f'info: ошибка {e}')
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Не удалось обновить данные"
-        )
-    finally:
-        if connection:
-            connection.close()
-            print('info: коннект закрыт')
+
+        query = f"UPDATE users SET {', '.join(fields)} WHERE id = ${idx}"
+        await connection.execute(query, *values, user_id)
+
+        return None
 
 
 @router_users.post("/login")
-async def login_user(data_for_login: UserLogin):
-    connection = None
-    try:
-        connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
-        connection.autocommit = True
-        with connection.cursor() as cursor:
-            cursor.execute('select phone, first_name, number_of_car, is_admin from users where email = %s and password_hash = %s',
-                           (data_for_login.email, data_for_login.password_hash))
-            ans = cursor.fetchone()
-            data_about_user = ans if ans else None
-        if (data_about_user):
-            user_role = "admin" if bool(data_about_user[3]) else "simple"
-            payload = {"sub": data_for_login.email, "role": user_role}
-            token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
-            return {'token' : token, "role": user_role, 'phone': data_about_user[0], 'first_name': data_about_user[1], 'number_of_car' : data_about_user[
-                2], 'email' : data_for_login.email}
-        else:
+async def login_user(data_for_login: UserLogin,
+                     pool: asyncpg.Pool = Depends(get_db_pool)):
+    async with pool.acquire() as connection:
+        query = '''SELECT
+                        phone,
+                        first_name,
+                        number_of_car,
+                        is_admin
+                   FROM users
+                   WHERE email = $1 and password_hash = $2'''
+
+        user = await connection.fetchrow(
+            query,
+            data_for_login.email,
+            data_for_login.password_hash
+        )
+
+        if not user:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
+                status_code=http_status.HTTP_401_UNAUTHORIZED,
                 detail="Неверный email или пароль"
             )
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f'info: ошибка {e}')
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Ошибка сервера при входе"
-        )
-    finally:
-        if connection:
-            connection.close()
-            print('info: коннект закрыт')
+
+        user_role = "admin" if user["is_admin"] else "simple"
+        payload = {"sub": data_for_login.email, "role": user_role}
+        token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
+
+        return {
+            'token': token,
+            'role': user_role,
+            'phone': user["phone"],
+            'first_name': user["first_name"],
+            'number_of_car': user["number_of_car"],
+            'email': data_for_login.email
+        }
