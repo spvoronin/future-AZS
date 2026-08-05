@@ -27,7 +27,7 @@ export default function GasStation({ setStationLabel }) {
 
         const station = stations[0];
         setStationId(station.id);
-        if (setStationLabel) setStationLabel(`АЗС №${station.id} — ${station.adress}`);
+        if (setStationLabel) setStationLabel(`АЗС №${station.id} — ${station.address}`);
 
         // Загружаем цены
         const pricesData = await Api.getPrices(station.id);
@@ -67,7 +67,7 @@ export default function GasStation({ setStationLabel }) {
 
   // Вычисления для панели "Итого" выполняются автоматически при изменении стейта
   const currentPriceEntry = prices.find((p) => p.fuel_type === selectedFuel);
-  const pricePerLiter = currentPriceEntry ? currentPriceEntry.prices_per_liter : 0;
+  const pricePerLiter = currentPriceEntry ? currentPriceEntry.price_per_liter : 0;
   const totalCost = (pricePerLiter * selectedVolume).toFixed(2);
   const selectedPumpObj = pumps.find(p => p.id === selectedPumpId);
   // Оформление заказа (Оплата)
@@ -134,7 +134,7 @@ export default function GasStation({ setStationLabel }) {
                   onClick={() => setSelectedFuel(p.fuel_type)}
                 >
                   <div className="fuel-name">{p.fuel_type}</div>
-                  <div className="fuel-price">{p.prices_per_liter} ₽/л</div>
+                  <div className="fuel-price">{p.price_per_liter} ₽/л</div>
                 </div>
               ))
             )}
