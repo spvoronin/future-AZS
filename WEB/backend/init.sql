@@ -103,7 +103,7 @@ create table tanks
     -- объём раздела резервуара
     max_capacity REAL NOT NULL,
 
-    -- настоящий объём в процентах
+    -- настоящий объём в литрах
     current_liters REAL NOT NULL,
 
     -- температура раздела
