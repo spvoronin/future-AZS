@@ -1,88 +1,95 @@
-from fastapi import APIRouter, HTTPException, status
-import psycopg2
-import os
-from dotenv import load_dotenv
+from fastapi import APIRouter, HTTPException, status as http_status, Depends
 from schemas.schem import TransactionCreate
+from database import get_db_pool
+import asyncpg
 
-load_dotenv()
-
-HOST = os.getenv("HOST")
-NAME_USER = os.getenv("NAME_USER")
-PASSWORD = os.getenv("PASSWORD")
-DATABASE = os.getenv("DATABASE")
 
 router_transactions = APIRouter(
     prefix="/transactions",
     tags=["Всё, что связано с транзакциями и заказами"]
 )
 
-
-
-
 @router_transactions.post("")
-async def create_transaction(data: TransactionCreate):
-    connection = None
-    try:
-        connection = psycopg2.connect(host=HOST, user=NAME_USER, password=PASSWORD, database=DATABASE)
-        connection.autocommit = False
-        with connection.cursor() as cursor:
-
-            cursor.execute('''
-                SELECT p.is_active, p.status, p.station_id, s.region_id 
+async def create_transaction(data: TransactionCreate,
+                             pool: asyncpg.Pool = Depends(get_db_pool)):
+    async with pool.acquire() as connection:
+        async with connection.transaction():
+            # 1-й запрос: Получаем сразу информацию о ТРК, АЗС и цене топлива
+            query_info = '''
+                SELECT 
+                    p.is_active, 
+                    p.status AS pump_status, 
+                    p.station_id, 
+                    pr.price_per_liter
                 FROM pumps p
                 JOIN station s ON p.station_id = s.id
-                WHERE p.id = %s
-            ''', (data.pump_id,))
-            pump_row = cursor.fetchone()
+                LEFT JOIN prices pr ON pr.region_id = s.region_id AND pr.fuel_type = $2
+                WHERE p.id = $1
+            '''
+            info_row = await connection.fetchrow(query_info, data.pump_id, data.fuel_type)
 
-            if not pump_row:
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Указанная ТРК не найдена")
-            if not pump_row[0]:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="ТРК временно отключена на обслуживание")
-            if pump_row[1] != 'idle':
-                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="На этой ТРК прямо сейчас идет налив или произошел сбой")
+            # Проверки колонок и цен
+            if not info_row:
+                raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail="Указанная ТРК не найдена")
+            if not info_row["is_active"]:
+                raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST,
+                                    detail="ТРК временно отключена на обслуживание")
+            if info_row["pump_status"] != 'idle':
+                raise HTTPException(status_code=http_status.HTTP_409_CONFLICT,
+                                    detail="На этой ТРК прямо сейчас идет налив или произошел сбой")
+            if info_row["price_per_liter"] is None:
+                raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND,
+                                    detail=f"Топливо {data.fuel_type} не продается в данном регионе")
 
-            station_id = pump_row[2]
-            region_id = pump_row[3]
+            station_id = info_row["station_id"]
+            price_per_liter = float(info_row["price_per_liter"])
 
-            cursor.execute('''
-                SELECT price_per_liter FROM prices 
-                WHERE region_id = %s AND fuel_type = %s
-            ''', (region_id, data.fuel_type))
-            price_row = cursor.fetchone()
-            if not price_row:
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Топливо {data.fuel_type} не продается в данном регионе")
-
-            price_per_liter = price_row[0]
-
-            cursor.execute('''
-                SELECT id, current_liters FROM tanks 
-                WHERE station_id = %s AND fuel_type = %s AND current_liters >= %s
+            # 2-й запрос: Блокируем цистерну с нужным топливом
+            query_tank = '''
+                SELECT id, current_liters 
+                FROM tanks 
+                WHERE station_id = $1 AND fuel_type = $2 AND current_liters >= $3
                 LIMIT 1
                 FOR UPDATE
-            ''', (station_id, data.fuel_type, data.requested_liters))
-            tank_row = cursor.fetchone()
+            '''
+            tank_row = await connection.fetchrow(query_tank, station_id, data.fuel_type, data.requested_liters)
 
             if not tank_row:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="На АЗС недостаточно топлива для вашего заказа")
+                raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST,
+                                    detail="На АЗС недостаточно топлива для вашего заказа")
 
-            tank_id = tank_row[0]
-            current_tank_liters = tank_row[1]
+            tank_id = tank_row["id"]
+            current_tank_liters = float(tank_row["current_liters"])
+            new_tank_volume = current_tank_liters - data.requested_liters
 
-            new_tank_volume = int(current_tank_liters - data.requested_liters)
-            cursor.execute('UPDATE tanks SET current_liters = %s WHERE id = %s', (new_tank_volume, tank_id))
-
-            cursor.execute("UPDATE pumps SET status = 'dispensing' WHERE id = %s", (data.pump_id,))
-
-            cursor.execute('''
+            # 3-й запрос: Одновременное обновление остатка в цистерне, смены статуса ТРК и создание транзакции
+            query_execute_order = '''
+                WITH update_tank AS (
+                    UPDATE tanks 
+                    SET current_liters = $1 
+                    WHERE id = $2
+                ),
+                update_pump AS (
+                    UPDATE pumps 
+                    SET status = 'dispensing' 
+                    WHERE id = $3
+                )
                 INSERT INTO transactions (pump_id, fuel_type, requested_liters, status, user_id)
-                VALUES (%s, %s, %s, 'progress', %s) RETURNING id
-            ''', (data.pump_id, data.fuel_type, data.requested_liters, data.user_id))
+                VALUES ($3, $4, $5, 'progress', $6)
+                RETURNING id;
+            '''
 
-            transaction_id = cursor.fetchone()[0]
+            transaction_id = await connection.fetchval(
+                query_execute_order,
+                new_tank_volume,
+                tank_id,
+                data.pump_id,
+                data.fuel_type,
+                data.requested_liters,
+                data.user_id
+            )
+
             total_cost = round(data.requested_liters * price_per_liter, 2)
-
-            connection.commit()
 
         return {
             "status": "ok",
@@ -92,18 +99,3 @@ async def create_transaction(data: TransactionCreate):
             "price_per_liter": price_per_liter,
             "total_cost_rub": total_cost
         }
-    except HTTPException:
-        if connection: connection.rollback()
-        raise
-    except Exception as e:
-        if connection:
-            connection.rollback()
-        print(f"info: ошибка транзакции {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Ошибка сервера при формировании заказа"
-        )
-    finally:
-        if connection:
-            connection.close()
-            print('info: коннект закрыт')
