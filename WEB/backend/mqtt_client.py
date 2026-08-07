@@ -1,23 +1,22 @@
-import paho.mqtt.client as mqtt
+import aiomqtt
 import os
 from dotenv import load_dotenv
+from contextlib import asynccontextmanager
+from collections.abc import AsyncIterator
 
 load_dotenv()
 
-MQTT_LOGIN = os.getenv("MQTT_LOGIN")
-MQTT_PASSWORD = os.getenv("MQTT_PASSWORD")
-MQTT_ADDRESS = os.getenv("MQTT_ADDRESS")
-MQTT_PORT = os.getenv("MQTT_PORT")
+@asynccontextmanager
+async def lifespan_mqtt() -> AsyncIterator[aiomqtt.Client]:
+    client = aiomqtt.Client(
+        hostname=os.getenv("MQTT_ADDRESS"),
+        port=int(os.getenv("MQTT_PORT")),
+        username=os.getenv("MQTT_LOGIN"),
+        password=os.getenv("MQTT_PASSWORD"),
+        timeout=5.0
+    )
+    async with client:
+        print("INFO:     Async MQTT client connected successfully")
+        yield client
 
-def init_mqtt() -> mqtt.Client:
-    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
-    client.username_pw_set(MQTT_LOGIN, MQTT_PASSWORD)
-    client.connect_async(MQTT_ADDRESS, int(MQTT_PORT))
-    client.loop_start()
-    return client
-
-
-def stop_mqtt(client: mqtt.Client | None):
-    if client:
-        client.loop_stop()
-        client.disconnect()
+    print("INFO:     Async MQTT client disconnected")

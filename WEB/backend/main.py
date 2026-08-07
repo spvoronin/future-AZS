@@ -9,15 +9,19 @@ from routers.transactions import router_transactions
 from routers.sensors import router_sensor
 from contextlib import asynccontextmanager
 from database import init_db, close_db
-from mqtt_client import init_mqtt, stop_mqtt
+import aiomqtt
+from mqtt_client import lifespan_mqtt
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
-    app.state.mqtt_client = init_mqtt()
-    yield
+    async with lifespan_mqtt() as client:
+        mqtt_client: aiomqtt.Client = client
+        app.state.mqtt_client = mqtt_client
+
+        yield
+
     await close_db()
-    stop_mqtt(getattr(app.state, "mqtt_client", None))
 
 
 app = FastAPI(lifespan=lifespan)
