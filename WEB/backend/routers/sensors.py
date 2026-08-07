@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status as http_status, Request
 import os
-import paho.mqtt.client as mqtt
 from dotenv import load_dotenv
 from dependencies import verify_admin, get_current_user
 from database import get_db_pool
