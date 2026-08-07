@@ -14,10 +14,10 @@ from mqtt_client import init_mqtt, stop_mqtt
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
-    init_mqtt()
+    app.state.mqtt_client = init_mqtt()
     yield
     await close_db()
-    stop_mqtt()
+    stop_mqtt(getattr(app.state, "mqtt_client", None))
 
 
 app = FastAPI(lifespan=lifespan)

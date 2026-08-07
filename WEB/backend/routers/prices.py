@@ -1,10 +1,7 @@
 from fastapi import APIRouter, HTTPException, status, Depends
-from dotenv import load_dotenv
 from schemas.schem import PricesCreate
 from database import get_db_pool
 import asyncpg
-
-load_dotenv()
 
 router_prices = APIRouter(
     prefix="/prices",

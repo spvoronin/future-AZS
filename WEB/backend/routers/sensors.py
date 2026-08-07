@@ -1,11 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, status as http_status
+from fastapi import APIRouter, Depends, HTTPException, status as http_status, Request
 import os
 import paho.mqtt.client as mqtt
 from dotenv import load_dotenv
 from dependencies import verify_admin, get_current_user
 from database import get_db_pool
 import asyncpg
-from mqtt_client import mqtt_client
 
 load_dotenv()
 
@@ -29,7 +28,15 @@ async def get_vol_from_sensor(user: dict = Depends(get_current_user), pool: asyn
     return dict(data_about_sensors)
 
 @router_sensor.post("/pumps/{pumps_id}")
-async def vkl_pump(pumps_id : int, admin_user: dict = Depends(verify_admin)):
+async def vkl_pump(pumps_id : int,
+                   request: Request,
+                   admin_user: dict = Depends(verify_admin)):
+    mqtt_client = getattr(request.app.state, "mqtt_client", None)
+    if mqtt_client is None:
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="MQTT-клиент не инициализирован"
+        )
     MQTT_topic = f"BV/SAF/{pumps_id}"
     result = mqtt_client.publish(MQTT_topic, "change")
     if result.rc == mqtt.MQTT_ERR_SUCCESS:

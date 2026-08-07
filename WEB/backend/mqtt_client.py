@@ -9,18 +9,15 @@ MQTT_PASSWORD = os.getenv("MQTT_PASSWORD")
 MQTT_ADDRESS = os.getenv("MQTT_ADDRESS")
 MQTT_PORT = os.getenv("MQTT_PORT")
 
-mqtt_client: mqtt.Client | None = None
-
-def init_mqtt():
-    global mqtt_client
-    mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
-    mqtt_client.username_pw_set(MQTT_LOGIN, MQTT_PASSWORD)
-    mqtt_client.connect_async(MQTT_ADDRESS, int(MQTT_PORT))
-    mqtt_client.loop_start()
+def init_mqtt() -> mqtt.Client:
+    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+    client.username_pw_set(MQTT_LOGIN, MQTT_PASSWORD)
+    client.connect_async(MQTT_ADDRESS, int(MQTT_PORT))
+    client.loop_start()
+    return client
 
 
-def stop_mqtt():
-    global mqtt_client
-    if mqtt_client:
-        mqtt_client.loop_stop()
-        mqtt_client.disconnect()
+def stop_mqtt(client: mqtt.Client | None):
+    if client:
+        client.loop_stop()
+        client.disconnect()
