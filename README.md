@@ -170,9 +170,9 @@ Backend на FastAPI разбит на роутеры по сущностям:
 ```bash
 cd WEB/backend
 
-python -m venv venv
-source venv/bin/activate        # Linux/macOS
-venv\Scripts\activate           # Windows
+python -m venv_old venv_old
+source venv_old/bin/activate        # Linux/macOS
+venv_old\Scripts\activate           # Windows
 
 pip install -r ../../requirements.txt
 

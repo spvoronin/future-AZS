@@ -1,4 +1,5 @@
-/WEB/backend/venv/
+/WEB/backend/venv_old/
+
 /WEB/backend/.env
 
 desktop.ini
@@ -8,3 +9,4 @@ Thumbs.db
 /.idea/
 
 /Arduino/main/secrets.h
+/WEB/backend/.venv/
